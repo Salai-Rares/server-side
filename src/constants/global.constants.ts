@@ -1,0 +1,1 @@
+export const PREDEFINED_FILTERS = new Set(['sort','price','page'])
