@@ -1,6 +1,6 @@
 import { inject, injectable } from "inversify";
 import Redis, { Redis as RedisType } from "ioredis";
-import { TYPES } from "../../types";
+import { TYPES } from "@/shared/types";
 
 
 @injectable() // ✅ Now RedisClient can be injected via Inversify

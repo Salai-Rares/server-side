@@ -2,21 +2,22 @@ import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import { inject, injectable } from "inversify";
 import { BaseMiddleware } from "inversify-express-utils";
-import { FilterCacheRepository } from "../../repositories/decorators/FilterCacheRepository";
-import { RequestScopedStorage } from "../../services/storage/RequestScopedStorage";
+import { FilterCacheRepository } from "../../modules/product/repositories/decorators/filter-cache.repository";
+import { RequestScopedStorage } from "../../core/request-context/request-scoped.storage";
 import {
   sanitizeQueryRequest,
   splitObjectValuesByComma,
 } from "../../helpers/utils";
-import { TYPES } from "../../types";
+import { TYPES } from "@/shared/types";
 import { isTruthy } from "../../helpers";
 import { PREDEFINED_FILTERS } from "../../constants";
-import { QueryFiltersObject } from "../../types/product";
+import { QueryFiltersObject } from "@/modules/product/types/product-query-filter.types";
 
 // Define types for better type safety and readability
 type ParsedQueryData = {
   sort: "asc" | "desc" | "price" | "rating" | "popularity";
   page: number;
+  limit:number;
 } & Record<string, string[] | undefined>;
 
 @injectable()
@@ -73,6 +74,7 @@ export class ValidateAndSanitizeQueryFilters extends BaseMiddleware {
     const structuredQuery: QueryFiltersObject = {
       sort: parsedData.sort,
       page: parsedData.page,
+      limit:parsedData.limit,
       attributes: {},
     };
 
@@ -113,6 +115,10 @@ export class ValidateAndSanitizeQueryFilters extends BaseMiddleware {
           const num = Number(val);
           return !isNaN(num) && num > 0 ? num : 1;
         }),
+        limit:z.string().default("20").transform((val=>{
+          const num = Number(val);
+          return !isNaN(num) && num > 0 ? num : 20;
+        })),
       ...Object.fromEntries(
         validAttributeKeys.map((key) => [key, z.array(z.string()).optional()])
       ),
@@ -133,4 +139,22 @@ export class ValidateAndSanitizeQueryFilters extends BaseMiddleware {
     }
     return dynamicFilters;
   }
+}
+
+@injectable()
+export class ValidateParam extends BaseMiddleware{
+  private mockedCategory :{[key:string]:string[]} = {"categoryA":["subcategory1A","subcategory2A"]};
+  constructor(
+    @inject(TYPES.FilterCacheRepository)
+    private filterCacheRepository: FilterCacheRepository,
+    @inject(TYPES.RequestScopedStorage)
+    private storage: RequestScopedStorage
+  ) {
+    super();
+  }
+  async handler(req: Request, res: Response, next: NextFunction): Promise<void> {
+    
+    return next();
+  }
+  
 }

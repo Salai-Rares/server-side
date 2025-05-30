@@ -1,7 +1,7 @@
 import fs from "fs";
 import { Model } from "mongoose";
 import { Request } from "express";
-import { QueryFilter } from "../types/product";
+import { QueryFilter } from "@/modules/product/types/product-query-filter.types";
 import EventEmitter from "events";
 import { PREDEFINED_FILTERS } from "../constants";
 function isObjectEmpty(obj: object) {
