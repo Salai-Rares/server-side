@@ -1,10 +1,12 @@
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
 import { BaseError } from "../BaseError";
 import { Request } from "express";
+import { ILogger } from "@/core/logger/logger.interface";
+import { TYPES } from "@/shared/types";
 @injectable()
 export class ErrorLogger {
   constructor(
-    // @inject(TYPES.Logger) private logger: ILogger
+    @inject(TYPES.Logger) private logger: ILogger
   ) {}
 
   /**
@@ -18,15 +20,16 @@ export class ErrorLogger {
 
     // Log level based on status code and operational status
     if (error.statusCode >= 500 && !error.isOperational) {
-    //   this.logger.error('HTTP Critical Error', logData);
+      this.logger.error('HTTP Critical Error', error , logData);
     } else if (error.statusCode >= 500) {
-    //   this.logger.error('HTTP Server Error', logData);
+      this.logger.error('HTTP Server Error',error, logData);
     } else if (error.statusCode >= 400) {
-    //   this.logger.warn('HTTP Client Error', logData);
+      this.logger.warn('HTTP Client Error', logData);
     } else {
-    //   this.logger.info('HTTP Error', logData);
+      this.logger.info('HTTP Error', logData);
     }
   }
+
 
   private buildHttpContext(req: Request): Record<string, any> {
     return {

@@ -1,6 +1,3 @@
-import { InventoryRepository } from "@/modules/inventory/repositories/inventory.repository";
-import ProductRepository from "@/modules/product/repositories/product.repository";
-
 export const TYPES = {
   RedisClient: Symbol.for("RedisClient"),
   KeyAttributesCache: Symbol.for("KeyAttributesCache"),
@@ -27,5 +24,7 @@ export const TYPES = {
   InventoryRepository: Symbol.for("InventoryRepository"),
   ErrorConverter :Symbol.for("ErrorConverter"),
   RequestContextBuilder : Symbol.for("RequestContextBuilder"),
-  ErrorLogger : Symbol.for("ErrorLogger")
+  ErrorLogger : Symbol.for("ErrorLogger"),
+  Logger : Symbol.for("Logger"),
+  LoggingMiddleware : Symbol.for("LoggingMiddleware")
 };

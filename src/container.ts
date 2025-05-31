@@ -31,6 +31,9 @@ import { ErrorLogger } from "./shared/errors/api-error/ErrorLogger";
 import { ErrorConverter } from "./shared/errors/api-error/ErrorConverter";
 import { ErrorDetectors } from "./shared/errors/api-error/ErrorDetectors";
 import { RequestContextBuilder } from "./shared/errors/api-error/RequestContextBuilder";
+import { ILogger } from "./core/logger/logger.interface";
+import { LoggerService } from "./core/logger/logger.service";
+
 
 // Create Inversify Container
 const container = new Container();
@@ -74,7 +77,7 @@ container
 container
   .bind<ValidateCreateCategory>(TYPES.ValidateCreateCategory)
   .to(ValidateCreateCategory)
-  .inSingletonScope();
+  ;
 container
   .bind<IProductRepository>(TYPES.ProductRepository)
   .to(ProductRepository)
@@ -91,4 +94,6 @@ container
   container.bind<ErrorLogger>(TYPES.ErrorLogger).to(ErrorLogger).inSingletonScope();
   container.bind<ErrorConverter>(TYPES.ErrorConverter).to(ErrorConverter).inSingletonScope();
   container.bind<RequestContextBuilder>(TYPES.RequestContextBuilder).to(RequestContextBuilder).inSingletonScope();
+  container.bind<ILogger>(TYPES.Logger).to(LoggerService).inSingletonScope();
+
 export { container };

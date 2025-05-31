@@ -6,6 +6,8 @@ import { container } from "./container";
 import { GlobalErrorHandler } from "./middleware/error-handler/error-handler";
 import { TYPES } from "@/shared/types";
 import { corsMiddleware } from "./middleware/cors/cors.middleware";
+import { expressLoggingMiddleware } from "./middleware/logging.middleware";
+
 
 // Initialize Inversify server
 const server = new InversifyExpressServer(container);
@@ -16,6 +18,7 @@ server.setConfig((app: Application) => {
   app.use(express.urlencoded({ extended: true }));
   app.use(corsMiddleware); // Define this elsewhere or import
   app.use("/images", express.static(path.join(__dirname, "images")));
+  app.use(expressLoggingMiddleware)
 });
 
 // Configure error handling

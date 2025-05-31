@@ -7,6 +7,7 @@ import { ApiErrorContext } from "@/shared/errors/error-context/api-error-context
 import { TYPES } from "@/shared/types";
 import { NextFunction, Request, Response } from "express";
 import { inject, injectable } from "inversify";
+import { ILogger } from "@/core/logger/logger.interface";
 
 @injectable()
 export class GlobalErrorHandler {
@@ -15,7 +16,7 @@ export class GlobalErrorHandler {
     @inject(TYPES.RequestContextBuilder)
     private contextBuilder: RequestContextBuilder,
     @inject(TYPES.ErrorLogger) private errorLogger: ErrorLogger,
-    /*@inject(TYPES.Logger) private logger: ILogger*/
+    @inject(TYPES.Logger) private logger: ILogger
   ) {}
 
   public handle = (
@@ -23,26 +24,27 @@ export class GlobalErrorHandler {
     req: Request,
     res: Response,
     next: NextFunction
-  ): void => { try {
+  ): void => {
+    try {
       // 1. Normalize the error
       const error = this.normalizeError(err, req);
-      
+
       // 2. Log the error
       this.errorLogger.logError(error, req);
-      
+
       // 3. Send response
       this.sendErrorResponse(error, res);
-      
     } catch (handlerError) {
       this.handleCriticalFailure(handlerError, res);
-    }};
+    }
+  };
 
-   /**
+  /**
    * Converts any error to a BaseError - much simpler now
    */
   private normalizeError(err: unknown, req: Request): BaseError {
     const context = this.contextBuilder.buildFromRequest(req);
-    
+
     // Already a BaseError - just ensure API context
     if (err instanceof BaseError) {
       this.ensureApiContext(err, context);
@@ -55,7 +57,7 @@ export class GlobalErrorHandler {
     }
 
     // Non-Error object - handle as string
-    const message = typeof err === 'string' ? err : 'Unknown error occurred';
+    const message = typeof err === "string" ? err : "Unknown error occurred";
     const apiError = ApiError.internalError(message);
     apiError.setContext(context);
     return apiError;
@@ -70,7 +72,7 @@ export class GlobalErrorHandler {
     }
   }
 
-   /**
+  /**
    * Sends error response to client
    */
   private sendErrorResponse(error: BaseError, res: Response): void {
@@ -85,23 +87,26 @@ export class GlobalErrorHandler {
    * Handles critical failure in error handler
    */
   private handleCriticalFailure(handlerError: unknown, res: Response): void {
-  /*  this.logger.error('Critical error in global error handler', {
-      handlerError: handlerError instanceof Error ? {
-        name: handlerError.name,
-        message: handlerError.message,
-        stack: handlerError.stack
-      } : handlerError,
-      timestamp: new Date().toISOString()
+    this.logger.error("Critical error in global error handler", undefined, {
+      handlerError:
+        handlerError instanceof Error
+          ? {
+              name: handlerError.name,
+              message: handlerError.message,
+              stack: handlerError.stack,
+            }
+          : handlerError,
+      timestamp: new Date().toISOString(),
     });
-    */
+
     if (!res.headersSent) {
       this.setSecurityHeaders(res);
       res.status(500).json({
         success: false,
-        error: 'CRITICAL_FAILURE',
-        message: 'An unrecoverable error occurred',
+        error: "CRITICAL_FAILURE",
+        message: "An unrecoverable error occurred",
         statusCode: 500,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   }
@@ -110,9 +115,8 @@ export class GlobalErrorHandler {
    * Sets security headers on responses
    */
   private setSecurityHeaders(res: Response): void {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
   }
-
 }
