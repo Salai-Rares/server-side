@@ -11,7 +11,7 @@ export class ApiError extends BaseError {
   constructor(
     message: string,
     statusCode: number,
-    errorType: ErrorType = ErrorType.UNKNOWN_ERROR,
+    errorType: ErrorType,
     details?: any,
     cause?: Error,
     isOperational?: boolean
@@ -325,23 +325,22 @@ export class ApiError extends BaseError {
   }
 
   /**
-   * Creates a business rule violation error
-   * @param message Error message
-   * @param rule The business rule that was violated
-   * @param context Additional context about the violation
-   */
-  static businessRuleViolation(
-    message: string,
-    rule: string,
-    context?: any
-  ): ApiError {
-    return new ApiError(message, 400, ErrorType.BUSINESS_RULE_ERROR, {
-      rule,
-      context,
-      type: "business_rule_violation",
-    });
-  }
-
+ * Creates a business rule violation error
+ * @param message Error message
+ * @param rule The business rule that was violated
+ * @param context Additional context about the violation
+ */
+static businessRuleViolation(
+  message: string,
+  rule: string,
+  context?: any
+): ApiError {
+  return new ApiError(message, 400, ErrorType.BUSINESS_RULE_ERROR, {
+    rule,
+    type: "business_rule_violation",
+    ...context // Spread context into details
+  });
+}
   /**
    * Creates a security violation error (non-operational to hide details)
    * @param message Generic error message (don't expose attack details)

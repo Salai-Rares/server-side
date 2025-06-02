@@ -1,3 +1,4 @@
+import { ValidationError, ValidationField } from "@/shared/errors/ValidationError";
 import { DiscountType, PriceType } from "../../types";
 import { DiscountVO } from "./discount.value-object";
 export class PriceVO {
@@ -11,9 +12,26 @@ export class PriceVO {
   }
 
   private validate(): void {
-    if (this._amount < 0) throw new Error("Price cannot be negative");
+    const errors: Array<ValidationField> = [];
+
+    if (this._amount < 0) {
+        errors.push({
+          field:"amount",
+          rule:"amount_positive_value",
+          message:'amount must be positive',
+          value:this.amount
+        })
+      }
     if (!["LEU", "EUR"].includes(this._currency)) {
-      throw new Error(`Invalid currency: ${this._currency}`);
+      errors.push({
+          field:"currency",
+          rule:"supported_currency",
+          message:'currency is not supported',
+          value:this.currency
+        })
+    }
+    if(errors.length > 0){
+      throw ValidationError.domainRules("Invalid price configurations",errors)
     }
   }
 

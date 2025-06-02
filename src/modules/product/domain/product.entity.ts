@@ -60,7 +60,7 @@ export class ProductEntity implements ProductProps {
     this.validate();
   }
   private validate(): void {
-    if (this._hasVariants && this._variants?.length === 0) {
+    if (this._hasVariants && !this._variants || this._variants?.length === 0) {
       throw new Error("Variant products must have at least one variant");
     }
 

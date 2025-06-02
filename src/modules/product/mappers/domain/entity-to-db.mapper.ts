@@ -31,7 +31,7 @@ export class ProductEntityToPersistanceMapper {
         images: variant.images,
       })),
       isFeatured: entity.isFeatured,
-      status: entity.status.getValue(),
+      status: entity.status.value,
       ratings: entity.ratings,
       reviewsCount: entity.reviewCount,
       seo: entity.seo

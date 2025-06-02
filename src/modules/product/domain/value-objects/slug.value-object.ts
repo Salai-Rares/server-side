@@ -1,3 +1,4 @@
+import { ValidationError, ValidationField } from "@/shared/errors/ValidationError";
 import slugify from "slugify";
 
 export class SlugVO{
@@ -6,13 +7,27 @@ export class SlugVO{
     }
 
     private validate(): void {
+       const errors: Array<ValidationField> = [];
         if (!this.value || this.value.length < 3) {
-          throw new Error("Slug must be at least 3 characters long.");
+          errors.push({
+          field:"slug",
+          rule:"slug_length",
+          message:`slug must be greater than ${this.value.length} `,
+          value:this.value.length
+        })
         }
     
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(this.value)) {
-          throw new Error("Slug format is invalid.");
+          errors.push({
+          field:"slug",
+          rule:"slug_format",
+          message:'Slug must be all letter and number with "-" between them',
+          value:this.value
+        })
         }
+         if(errors.length > 0){
+              throw ValidationError.domainRules("Invalid price configurations",errors)
+            }
       }
   // Factory method for creation from raw names
   static fromName(name: string): SlugVO {

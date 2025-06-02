@@ -45,17 +45,13 @@ export class ProductController extends BaseHttpController {
     super();
   }
 
-  //cleanupUploadedFiles
-  @httpPost("/product/create", productsImageUpload.raw())
+
+  @httpPost("/product/create", productsImageUpload.raw(),cleanupUploadedFiles)
   async createProduct(req: Request, res: Response): Promise<void> {
-    //console.log(req.body)
     const dto = CreateProductDto.parse(mapCreateProductRequest(req));
-    // console.dir(dto, { depth: null, colors: true });
     const { product, inventories } =
       await this.productCreateUseCase.createProductWithInventories(dto);
-    console.log("Product in controller", product);
-    console.log("inventories in controller", inventories);
-    res.status(200).json({ status: "success", data: req.body });
+    res.status(200).json({ status: "success", data: {product,inventories}});
   }
 
 

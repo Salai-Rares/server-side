@@ -5,17 +5,17 @@ import { ApiError } from "./api-error/ApiError";
 export interface ValidationField {
   field: string;
   message: string;
-  rule?: string;
+  rule: string;
   value?: any;
 }
 export class ValidationError extends ApiError {
   private readonly _validationFields: ValidationField[];
-  private readonly _validationSource: 'zod' | 'domain';
+  private readonly _validationSource: "zod" | "domain";
 
   constructor(
     message: string,
     validationFields: ValidationField[],
-    source: 'zod' | 'domain' = 'zod',
+    source: "zod" | "domain" = "zod",
     cause?: Error
   ) {
     super(
@@ -26,11 +26,11 @@ export class ValidationError extends ApiError {
       cause,
       true // Validation errors are operational
     );
-    
+
     this._validationFields = validationFields;
     this._validationSource = source;
   }
-   public isRetryable(): boolean {
+  public isRetryable(): boolean {
     return false; // Validation errors are client errors - never retry
   }
 
@@ -40,71 +40,112 @@ export class ValidationError extends ApiError {
 
   // ============= SERIALIZATION =============
 
- public serialize(): SerializedError {
+  public serialize(): SerializedError {
     const base = super.serialize();
-    const shouldHideDetails = this.isProductionMode();
-    
     return {
       ...base,
       details: {
         ...base.details,
-        validationFields: shouldHideDetails 
-          ? this._validationFields.map(f => ({ field: f.field, message: f.message, rule: f.rule }))
-          : this._validationFields,
+        validationFields: this._validationFields.map((field) => ({
+          field: field.field,
+          message: field.message,
+          rule: field.rule,
+          ...(field.value !== undefined &&
+            !this.isSensitiveField(field.field) && {
+              value: this.sanitizeValue(field.value),
+            }),
+        })),
         validationSource: this._validationSource,
-        failedFieldCount: this._validationFields.length
-      }
+        failedFieldCount: this._validationFields.length,
+      },
     };
   }
 
   // ============= ZOD INTEGRATION =============
 
-  static fromZodError(zodError: ZodError, customMessage?: string): ValidationError {
+  static fromZodError(
+    zodError: ZodError,
+    customMessage?: string
+  ): ValidationError {
     const message = customMessage || ERROR_MESSAGES.VALIDATION.GENERIC;
-    
-    const validationFields: ValidationField[] = zodError.errors.map((issue: ZodIssue) => ({
-      field: issue.path.join('.') || 'root',
-      message: issue.message,
-      rule: this.mapZodCode(issue.code),
-      value: 'received' in issue ? issue.received : undefined
-    }));
 
-    return new ValidationError(message, validationFields, 'zod',zodError);
+    const validationFields: ValidationField[] = zodError.errors.map(
+      (issue: ZodIssue) => ({
+        field: issue.path.join(".") || "root",
+        message: issue.message,
+        rule: this.mapZodCode(issue.code),
+        value: "received" in issue ? issue.received : undefined,
+      })
+    );
+
+    return new ValidationError(message, validationFields, "zod", zodError);
   }
 
   private static mapZodCode(code: string): string {
     const map: Record<string, string> = {
-      'invalid_string': 'format',
-      'too_small': 'minLength',
-      'too_big': 'maxLength',
-      'invalid_enum_value': 'enum'
+      invalid_string: "format",
+      too_small: "minLength",
+      too_big: "maxLength",
+      invalid_enum_value: "enum",
     };
     return map[code] || code;
   }
 
   // ============= DOMAIN VALIDATION =============
 
-  static domainRule(field: string, rule: string, message: string, value?: any): ValidationError {
-    return new ValidationError(message, [{ field, message, rule, value }], 'domain');
+  static domainRule(
+    field: string,
+    rule: string,
+    message: string,
+    value?: any
+  ): ValidationError {
+    return new ValidationError(
+      message,
+      [{ field, message, rule, value }],
+      "domain"
+    );
   }
 
-  static domainRules(message: string, fields: ValidationField[]): ValidationError {
-    return new ValidationError(message, fields, 'domain');
+  static domainRules(
+    message: string,
+    fields: ValidationField[]
+  ): ValidationError {
+    return new ValidationError(message, fields, "domain");
   }
 
   // ============= UTILITY METHODS (ONLY ESSENTIAL ONES) =============
 
   public hasField(fieldName: string): boolean {
-    return this._validationFields.some(f => f.field === fieldName);
+    return this._validationFields.some((f) => f.field === fieldName);
   }
 
   public getFieldError(fieldName: string): string | null {
-    const field = this._validationFields.find(f => f.field === fieldName);
+    const field = this._validationFields.find((f) => f.field === fieldName);
     return field ? field.message : null;
   }
 
   public getFailedFields(): string[] {
-    return this._validationFields.map(f => f.field);
+    return this._validationFields.map((f) => f.field);
   }
 
+  private isSensitiveField(fieldName: string): boolean {
+    const sensitiveFields = [
+      "password",
+      "token",
+      "secret",
+      "creditCard",
+      "cvv",
+      "ssn",
+    ];
+    return sensitiveFields.some((sensitive) =>
+      fieldName.toLowerCase().includes(sensitive.toLowerCase())
+    );
+  }
+
+  private sanitizeValue(value: any): any {
+    if (typeof value === "string" && value.length > 100) {
+      return value.substring(0, 100) + "...[truncated]";
+    }
+    return value;
+  }
 }

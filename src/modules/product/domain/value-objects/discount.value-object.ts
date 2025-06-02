@@ -1,4 +1,7 @@
+import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { DiscountType } from "../../types";
+import { th } from "@faker-js/faker/.";
+import { ValidationError, ValidationField } from "@/shared/errors/ValidationError";
 
 export class DiscountVO {
   private readonly _type: "percentage" | "fixed";
@@ -18,23 +21,55 @@ export class DiscountVO {
   }
 
   private validate(): void {
-    if (this._value <= 0) throw new Error("Discount value must be positive");
+    const errors: Array<ValidationField> = [];
+
+    if (this._value <= 0) {
+      errors.push({
+        field: "value",
+        rule: "positive",
+        message: "Discount value must be positive",
+        value: this._value,
+      });
+    }
+
     if (this._type === "percentage" && this._value > 100) {
-      throw new Error("Percentage discount cannot exceed 100%");
+        errors.push({
+        field: 'value',
+        rule: 'max_percentage',
+        message: 'Percentage discount cannot exceed 100%',
+        value: this._value
+      });
     }
     if (this._validUntil && this._validUntil < new Date()) {
-      throw new Error("Discount has expired");
+     errors.push({
+        field: 'validUntil',
+        rule: 'not_past',
+        message: 'Discount expiration date cannot be in the past',
+        value: this._validUntil
+      });
+    }
+    if (errors.length > 0) {
+      throw ValidationError.domainRules("Invalid discount configuration", errors);
     }
   }
 
-  // Core functionality (keeps your current behavior)
+  // Core functionality
   applyTo(amount: number): number {
     if (this.type === "fixed" && this.value >= amount) {
-      throw new Error("Discount can't be bigger than the price");
+      ApiError.businessRuleViolation(
+        "Discount exceeds price",
+        "discount_exceeds_price",
+        { discountValue: this.value, itemPrice: amount }
+      );
     }
     if (this._minApplicableAmount && amount < this._minApplicableAmount) {
-      throw new Error(
-        `Minimum purchase amount (${this._minApplicableAmount}) not met`
+      throw ApiError.businessRuleViolation(
+        `Minimum purchase amount (${this._minApplicableAmount}) not met`,
+        "minimum_purchase_amount",
+        {
+          minimumAmountForDiscount: this._minApplicableAmount,
+          itemPrice: amount,
+        }
       );
     }
     return this._type === "percentage"

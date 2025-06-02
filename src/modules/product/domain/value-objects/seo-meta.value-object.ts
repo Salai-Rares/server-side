@@ -1,5 +1,6 @@
 import { SeoMeta } from "@/shared/types";
 import { ShortProductDescriptionVO } from "./description/short-description.value-object";
+import { ValidationError } from "@/shared/errors/ValidationError";
 export interface SeoMetaProps {
   title: string;
   description: string;
@@ -33,6 +34,6 @@ export class SeoMetaVO {
   }
 
   private validate() {
-    if (this.title.length < 3) throw new Error("Title too small");
+    if (this.title.length < 3) throw ValidationError.domainRule('title','length',`title must have a length equal or greater than ${this.title.length}`,this.title.length);
   }
 }

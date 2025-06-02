@@ -16,13 +16,16 @@ import { IInventoryRepository } from "@/modules/inventory/types";
 import mongoose from "mongoose";
 import { MongoServerError } from "mongodb";
 import { withRetry } from "@/shared/utils/retry";
+import { ApiError } from "@/shared/errors/api-error/ApiError";
+import { ILogger } from "@/core/logger/logger.interface";
 @injectable()
 export class ProductCreateUseCase implements IProductCreateService {
   constructor(
     @inject(TYPES.ProductRepository)
     private productRepository: IProductRepository,
     @inject(TYPES.InventoryRepository)
-    private inventoryRepository: IInventoryRepository
+    private inventoryRepository: IInventoryRepository,
+    @inject(TYPES.Logger) private logger: ILogger
   ) {}
 
   /**
@@ -47,8 +50,9 @@ export class ProductCreateUseCase implements IProductCreateService {
         const hasVariants = Boolean(dto.variants?.length);
 
         if (hasVariants && dto.inventory) {
-          throw new Error(
-            "Root product cannot have both variants and inventory"
+          throw ApiError.businessRuleViolation(
+            "Root product cannot have both variants and inventory",
+            "product has either variants with possible inventories either only inventory"
           );
         }
 
@@ -127,14 +131,26 @@ export class ProductCreateUseCase implements IProductCreateService {
       });
 
       if (!result) {
-        throw new Error("Transaction completed but returned no result");
+        throw ApiError.internalError(
+          "Transaction completed but returned no result",
+          new Error("Transaction result is undefined")
+        );
       }
 
       return result;
     } finally {
-      await session.endSession().catch((err) => {
-        console.error("Failed to end session:", err);
-      });
+      try {
+        await session.endSession();
+      } catch (cleanupError) {
+        // Use your logger service
+        this.logger.warn("Failed to close MongoDB session", {
+          error:
+            cleanupError instanceof Error ? cleanupError.message : cleanupError,
+          stack: cleanupError instanceof Error ? cleanupError.stack : undefined,
+          operation: "product_creation",
+          sessionId: session.id,
+        });
+      }
     }
   }
 }
