@@ -23,7 +23,6 @@ export interface ProductProps{
     images:ProductImage[],
     price:PriceVO,
     discount?:DiscountVO,
-    hasVariants:boolean,
     variants?:ProductVariantEntity[],
     isFeatured?:boolean,
     status:ProductStatus,

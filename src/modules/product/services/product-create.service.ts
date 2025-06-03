@@ -96,7 +96,6 @@ export class ProductCreateUseCase implements IProductCreateService {
         // 3. Create and save product
         const product = new ProductEntity({
           id: productId,
-          hasVariants,
           ...ProductDtoToEntityMapper.mapToEntity(dto),
           slug: SlugVO.fromName(dto.name),
           variants,

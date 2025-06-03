@@ -1,3 +1,4 @@
+import { ValidationError } from "@/shared/errors/ValidationError";
 import { ProductImage, RatingSummary } from "../types";
 import { AllUniqueKeyAndValuesFilters } from "../types/product-query-filter.types";
 import { ProductProps } from "./product.types";
@@ -14,15 +15,15 @@ import { ProductVariantEntity } from "./variant-product.entity";
 export class ProductEntity implements ProductProps {
   private readonly _id: string;
   private readonly _sku: ProductSkuVO;
-  private readonly _description: ProductDescriptionVO;
+  private _description: ProductDescriptionVO;
   private _shortDescription?: ShortProductDescriptionVO;
   private _brand?: string;
-  private readonly _categories: string[];
+  private _categories: string[];
   private _tags?: string[];
-  private readonly _images: ProductImage[];
+  private _images: ProductImage[];
   private _price: PriceVO;
   private _discount?: DiscountVO;
-  private readonly _hasVariants: boolean;
+  private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
   private _isFeatured?: boolean;
   private _status: ProductStatus;
@@ -32,8 +33,8 @@ export class ProductEntity implements ProductProps {
   private _attributes?: AllUniqueKeyAndValuesFilters;
   private _slug: SlugVO;
   private _name: string;
-  private _createdAt?: Date;
-  private _updatedAt?: Date;
+  private readonly _createdAt?: Date;
+  private readonly _updatedAt?: Date;
   constructor(props: ProductProps) {
     this._id = props.id;
     this._sku = props.sku;
@@ -45,7 +46,7 @@ export class ProductEntity implements ProductProps {
     this._images = props.images;
     this._price = props.price;
     this._discount = props.discount;
-    this._hasVariants = props.hasVariants;
+    this._hasVariants = this.calculateHasVariants();
     this._variants = props.variants;
     this._isFeatured = props.isFeatured;
     this._status = props.status;
@@ -60,17 +61,28 @@ export class ProductEntity implements ProductProps {
     this.validate();
   }
   private validate(): void {
-    if (this._hasVariants && !this._variants || this._variants?.length === 0) {
-      throw new Error("Variant products must have at least one variant");
+    if (this._variants && this._variants.length > 0) {
+      this.validateVariantSkus(this._variants);
     }
+  }
 
-    if (!this._hasVariants && this._variants && this._variants.length > 0) {
-      throw new Error("Non-variant product cannot have variants");
+  private validateVariantSkus(variants: ProductVariantEntity[]): void {
+    const skus = new Set<string>();
+    for (const variant of variants) {
+      if (skus.has(variant.sku.value)) {
+        throw ValidationError.domainRule(
+          "variants",
+          "duplicate_sku",
+          "Variant SKUs must be unique",
+          { sku: variant.sku.value, productId: this._id }
+        );
+      }
+      skus.add(variant.sku.value);
     }
+  }
 
-    if (this._price.amount <= 0) {
-      throw new Error("Product price must be positive");
-    }
+  private calculateHasVariants(): boolean {
+    return !!(this._variants && this._variants.length > 0);
   }
   // =====================
   // Getters (Read-only)
@@ -143,5 +155,212 @@ export class ProductEntity implements ProductProps {
   }
   get updatedAt(): Date | undefined {
     return this._updatedAt;
+  }
+
+  updateName(newName: string): void {
+    // Business rule: Can't change name if product is deleted
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "name",
+        "immutable_when_deleted",
+        "Cannot update name of deleted product",
+        this._id
+      );
+    }
+    this._name = newName.trim();
+  }
+
+  updateDescription(newDescription: ProductDescriptionVO): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "description",
+        "immutable_when_deleted",
+        "Cannot update description of deleted product",
+        this._id
+      );
+    }
+    this._description = newDescription;
+  }
+  updateShortDescription(newShortDescription: ShortProductDescriptionVO): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "shortDescription",
+        "immutable_when_deleted",
+        "Cannot update short description of deleted product",
+        this._id
+      );
+    }
+
+    this._shortDescription = newShortDescription;
+  }
+  clearShortDescription(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "shortDescription",
+        "immutable_when_deleted",
+        "Cannot clear short description of deleted product",
+        this._id
+      );
+    }
+
+    this._shortDescription = undefined;
+  }
+
+  updateBrand(newBrand: string): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "brand",
+        "immutable_when_deleted",
+        "Cannot update brand of deleted product",
+        this._id
+      );
+    }
+
+    this._brand = newBrand;
+  }
+
+  clearBrand(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "brand",
+        "immutable_when_deleted",
+        "Cannot clear brand of deleted product",
+        this._id
+      );
+    }
+
+    this._brand = undefined;
+  }
+
+  updateTags(newTags: string[]): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "tags",
+        "immutable_when_deleted",
+        "Cannot update tags of deleted product",
+        this._id
+      );
+    }
+
+    // Zod already validated and processed the tags array
+    this._tags = newTags;
+  }
+
+  clearTags(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "tags",
+        "immutable_when_deleted",
+        "Cannot clear tags of deleted product",
+        this._id
+      );
+    }
+
+    this._tags = undefined;
+  }
+
+  updatePrice(newPrice: PriceVO): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "price",
+        "immutable_when_deleted",
+        "Cannot update price of deleted product",
+        this._id
+      );
+    }
+    // Business rule: Large price changes on active products might need approval
+    if (this._status.isActive()) {
+      const changePercentage =
+        Math.abs(newPrice.amount - this._price.amount) / this._price.amount;
+      if (changePercentage > 0.2) {
+        // 20% threshold
+        throw ValidationError.domainRule(
+          "price",
+          "large_change_requires_approval",
+          "Price changes >20% on active products require approval workflow",
+          {
+            productId: this._id,
+            currentPrice: this._price.amount,
+            requestedPrice: newPrice.amount,
+            changePercentage: Math.round(changePercentage * 100),
+          }
+        );
+      }
+    }
+
+    this._price = newPrice;
+  }
+
+  updateDiscount(newDiscount: DiscountVO): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "discount",
+        "immutable_when_deleted",
+        "Cannot update discount of deleted product",
+        this._id
+      );
+    }
+
+    // Business rule: Discount cannot be greater than price
+    const discountAmount =
+      newDiscount.type === "percentage"
+        ? (this._price.amount * newDiscount.value) / 100
+        : newDiscount.value;
+
+    if (discountAmount >= this._price.amount) {
+      throw ValidationError.domainRule(
+        "discount",
+        "cannot_exceed_price",
+        "Discount cannot be equal to or greater than product price",
+        { discount: discountAmount, price: this._price.amount }
+      );
+    }
+
+    this._discount = newDiscount;
+  }
+
+  clearDiscount(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "discount",
+        "immutable_when_deleted",
+        "Cannot clear discount of deleted product",
+        this._id
+      );
+    }
+
+    this._discount = undefined;
+  }
+
+  updateVariants(newVariants: ProductVariantEntity[]): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "variants",
+        "immutable_when_deleted",
+        "Cannot update variants of deleted product",
+        this._id
+      );
+    }
+
+    // Validate variant SKUs are unique (if any variants provided)
+    if (newVariants.length > 0) {
+      this.validateVariantSkus(newVariants);
+    }
+
+    // Update variants
+    this._variants = newVariants.length > 0 ? newVariants : undefined;
+
+    // Auto-recalculate hasVariants
+    this._hasVariants = this.calculateHasVariants();
+  }
+
+   clearVariants(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule('variants', 'immutable_when_deleted', 
+        'Cannot clear variants of deleted product', this._id);
+    }
+
+    this._variants = undefined;
+    this._hasVariants = false; // Auto-update
   }
 }
