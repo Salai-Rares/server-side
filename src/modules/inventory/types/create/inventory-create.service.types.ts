@@ -1,0 +1,15 @@
+import { ClientSession } from "mongoose";
+import { InventoryEntity } from "../../domain/inventory.entity";
+import { CreateInventoryType } from "../../schemas/create-inventory.dto";
+import { InventoryDto } from "../../schemas/inventory.dto";
+
+export interface IInventoryServiceCreate {
+  saveInventory(
+    inventory: CreateInventoryType,
+    options?: { session: ClientSession }
+  ): Promise<InventoryEntity>;
+  saveBulkInventories(
+    inventory: CreateInventoryType[],
+    options?: { session: ClientSession }
+  ): Promise<InventoryEntity[]>;
+}

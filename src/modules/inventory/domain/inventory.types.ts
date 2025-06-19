@@ -1,9 +1,8 @@
 export interface InventoryProps{
     id:string,
-    referenceType:"product"|"variant",
-    referenceId:string,
+    referenceRootId:string,
+    referenceVariantId?:string,
     stock:number,
-    inStock:boolean,
     warehouseLocation?:string,
     createdAt?:Date,
     updatedAt?:Date

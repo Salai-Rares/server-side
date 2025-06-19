@@ -6,6 +6,7 @@ import {
   BaseHttpController,
   controller,
   httpGet,
+  httpPatch,
   httpPost,
   withMiddleware,
 } from "inversify-express-utils";
@@ -19,10 +20,21 @@ import { createMulterUpload } from "../../../middleware/multer/fileUpload.middle
 import { cleanupUploadedFiles } from "../../../middleware/multer/cleanupUploadedFiles.middleware";
 import path from "path";
 import { mapCreateProductRequest } from "../mappers/http/mapCreateProductRequest";
-import { CreateProductDto } from "../schemas";
+
 import { ProductCreateUseCase } from "../services/product-create.service";
 import { withRetry } from "@/shared/utils/retry";
 import { MongoServerError } from "mongodb";
+import { ProductEntity } from "../domain/product.entity";
+import { CreateProductSchema, UpdateProductRequestSchema } from "../schemas";
+import {
+  ProcessedRequest,
+  processImagesMiddleware,
+} from "../middlewares/process-images.middleware";
+import { ILogger } from "@/core/logger/logger.interface";
+import { IProductUpdateService } from "../types/update/product-update.service.types";
+import { IProductCreateService } from "../types/create/product-create.service.types";
+import { ValidationError } from "@/shared/errors/ValidationError";
+import { ApiError } from "@/shared/errors/api-error/ApiError";
 const productsImageUpload = createMulterUpload({
   destination: path.resolve(__dirname, "../../../images/products"),
   mimetypes: {
@@ -40,21 +52,60 @@ export class ProductController extends BaseHttpController {
     @inject(TYPES.RequestScopedStorage) private storage: RequestScopedStorage,
     @inject(TYPES.CategoryService) private categoryService: ICategoryService,
     @inject(TYPES.ProductCreateUseCase)
-    private productCreateUseCase: ProductCreateUseCase
+    private productCreateUseCase: IProductCreateService,
+    @inject(TYPES.ProductUpdateUseCase) private productUpdateUseCase : IProductUpdateService,
+    @inject(TYPES.Logger) private logger: ILogger
   ) {
     super();
   }
 
+  @httpPost(
+    "/create",
+    productsImageUpload.raw(),
+    processImagesMiddleware,
+    cleanupUploadedFiles
+  )
+  async createProduct(req: ProcessedRequest, res: Response): Promise<void> {
+    const productData = req.body.product;
+    if (req.processedImages?.productImages) {
+      productData.images = req.processedImages.productImages;
+    }
+    if (req.processedImages?.variantImages && productData.variants) {
+      const variantImages = req.processedImages.variantImages;
+      const variants = productData.variants;
+      variants.forEach((variant: any, index: number) => {
+        if (variantImages[index]) {
+          variant.images = variantImages[index];
+        }
+      });
+    }
+    const dto = CreateProductSchema.parse(productData);
 
-  @httpPost("/product/create", productsImageUpload.raw(),cleanupUploadedFiles)
-  async createProduct(req: Request, res: Response): Promise<void> {
-    const dto = CreateProductDto.parse(mapCreateProductRequest(req));
     const { product, inventories } =
       await this.productCreateUseCase.createProductWithInventories(dto);
-    res.status(200).json({ status: "success", data: {product,inventories}});
+    res.status(200).json({ status: "success", data: { product, inventories } });
   }
 
+  @httpPatch("/:id", productsImageUpload.array("images"), cleanupUploadedFiles)
+  async updateMultipleProductFields(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const productId = req.params.id;
+    const dto = UpdateProductRequestSchema.parse(req.body);
+    const files = req.files as Express.Multer.File[];
+    const uploadedMapSize = Object.keys(dto.uploadedMap || {}).length;
+    const fileCount = files?.length ?? 0;
 
+    if (uploadedMapSize !== fileCount) {
+      return next(ApiError.businessRuleViolation(`Uploaded file count mismatch: expected ${uploadedMapSize}, got ${fileCount}`,"uploadedMap_equal_size_with_files"));
+    }
+   const {product, inventories} = await this.productUpdateUseCase.updateProductWithInventories(productId,{dto,files})
+
+    res.status(200).json({ status: "success", data: dto });
+    return;
+  }
 
   @httpGet(
     "/queryies/:category/:subcategory?",

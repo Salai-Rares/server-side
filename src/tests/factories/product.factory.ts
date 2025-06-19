@@ -1,8 +1,9 @@
-import { CreateProductDto } from "@/modules/product/schemas";
+
+import { CreateProductType } from "@/modules/product/schemas";
 import { faker } from "@faker-js/faker";
 import { Types } from "mongoose";
 
-export function makePlainProductDto(overrides: Partial<CreateProductDto> = {}): CreateProductDto {
+export function makePlainProductDto(overrides: Partial<CreateProductType> = {}): CreateProductType {
   return {
     sku: 'TOOL-CHAIN-X45',
     name: faker.commerce.productName(),
@@ -41,18 +42,17 @@ export function makePlainProductDto(overrides: Partial<CreateProductDto> = {}): 
   };
 }
 
-export function makeDtoWithRootInventory(): CreateProductDto {
+export function makeDtoWithRootInventory(): CreateProductType {
   return makePlainProductDto({
     inventory: {
       stock: faker.number.int({ min: 1, max: 50 }),
-      inStock: true,
       warehouseLocation: faker.location.city(),
     },
     variants: undefined, // ensure no conflict
   });
 }
 
-export function makeProductWithVariants(): CreateProductDto {
+export function makeProductWithVariants(): CreateProductType {
   return makePlainProductDto({
     variants: [
       {
@@ -64,7 +64,6 @@ export function makeProductWithVariants(): CreateProductDto {
         },
         inventory: {
           stock: 5,
-          inStock: true,
           warehouseLocation: "Warehouse X",
         },
         images: [],
@@ -78,7 +77,6 @@ export function makeProductWithVariants(): CreateProductDto {
         },
         inventory: {
           stock: 5,
-          inStock: true,
           warehouseLocation: "Warehouse X",
         },
         images: [],
@@ -87,11 +85,10 @@ export function makeProductWithVariants(): CreateProductDto {
   });
 }
 
-export function makeProductWithRootInventoryAndVariants(): CreateProductDto {
+export function makeProductWithRootInventoryAndVariants(): CreateProductType {
   return makePlainProductDto({
     inventory: {
       stock: faker.number.int({ min: 1, max: 100 }),
-      inStock: true,
       warehouseLocation: faker.location.city(),
     },
     variants: [
@@ -104,7 +101,6 @@ export function makeProductWithRootInventoryAndVariants(): CreateProductDto {
         },
         inventory: {
           stock: faker.number.int({ min: 1, max: 100 }),
-          inStock: true,
           warehouseLocation: faker.location.city(),
         },
         images: [],

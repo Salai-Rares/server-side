@@ -19,7 +19,6 @@ export class LoggerService implements ILogger {
 
   private getLogLevel(): LogLevel {
     const envLevel = process.env.LOG_LEVEL?.toUpperCase() || 'INFO';
-    
     // Development: Only warnings and errors by default
     if (process.env.NODE_ENV === 'development') {
       return LogLevel[envLevel as keyof typeof LogLevel] ?? LogLevel.WARN;
@@ -47,7 +46,6 @@ export class LoggerService implements ILogger {
     if (!this.shouldLog(level)) return;
 
     const entry = this.createLogEntry(levelName, message, data);
-
     if (this.config.environment === 'development') {
       LogFormatters.development(entry);
     } else {

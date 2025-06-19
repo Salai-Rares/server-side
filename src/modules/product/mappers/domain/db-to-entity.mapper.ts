@@ -11,11 +11,13 @@ import { SlugVO } from "../../domain/value-objects/slug.value-object";
 import { ProductStatus } from "../../domain/value-objects/status.value-object";
 import { ProductVariantEntity } from "../../domain/variant-product.entity";
 import { IProductDocument, IProductLean } from "../../types";
-import { VariantProductFromPersistanceToEntity } from "./db-to-variantEntity.mapper";
+import { VariantProductFromPersistanceToEntity } from "./variant/db-to-variantEntity.mapper";
 import { IProduct } from "../../types";
 
 export class ProductFromPersistanceToEntityMapper {
-  static fromPersistanceToEntity(dbData: IProductDocument | IProductLean): ProductEntity {
+  static fromPersistanceToEntity(
+    dbData: IProductDocument | IProductLean
+  ): ProductEntity {
     const props: ProductProps = {
       id: (dbData._id as Types.ObjectId).toString(),
       sku: new ProductSkuVO(dbData.sku),
@@ -27,22 +29,25 @@ export class ProductFromPersistanceToEntityMapper {
       brand: dbData.brand?.toString(),
       categories: dbData.categories.map((cat) => cat.toString()),
       tags: dbData.tags || [],
-      images: dbData.images,
+      images: dbData.images?.map((image) => ({
+        ...image,
+        id: image._id.toString(),
+        _id: undefined,
+      })),
       price: new PriceVO({
         amount: dbData.price.amount,
         currency: dbData.price.currency,
       }),
       discount: dbData.discount ? new DiscountVO(dbData.discount) : undefined,
-      hasVariants: dbData.hasVariants,
       variants: dbData.variants?.map(
         VariantProductFromPersistanceToEntity.fromPersistanceToEntity
       ),
       isFeatured: dbData.isFeatured || false,
       status: new ProductStatus(dbData.status),
-      ratings: dbData.ratings ,
+      ratings: dbData.ratings,
       reviewsCount: dbData.reviewsCount,
-      seo: dbData.seo ? new SeoMetaVO(dbData.seo) : undefined,
-      attributes: dbData.attributes ,
+      seo: dbData.seo ? SeoMetaVO.fromDto(dbData.seo) : undefined,
+      attributes: dbData.attributes,
       slug: new SlugVO(dbData.slug),
       createdAt: dbData.createdAt,
       updatedAt: dbData.updatedAt,

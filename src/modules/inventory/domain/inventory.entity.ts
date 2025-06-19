@@ -1,41 +1,87 @@
+import { ValidationError } from "@/shared/errors/ValidationError";
+import {
+  UpdateableInventoryFieldsTypes,
+  UpdateableInventoryType,
+  UpdateInventoryType,
+} from "../schemas/inventory.dto";
 import { InventoryProps } from "./inventory.types";
+import { ChangeTracker } from "@/shared/services/change-tracker";
 
 export class InventoryEntity implements InventoryProps {
+  private changeTracker : ChangeTracker<InventoryEntity,UpdateableInventoryFieldsTypes> = new ChangeTracker()
   private readonly _id: string;
-  private readonly _referenceType: "product" | "variant";
-  private readonly _referenceId: string; // Points to Product.id or ProductVariant.id
   private _stock: number; // Mutable
   private _inStock: boolean;
   private _warehouseLocation?: string;
   private _createdAt?: Date;
   private _updatedAt?: Date;
+  private _referenceRootId: string;
+  private _referenceVariantId?: string | undefined;
   constructor(props: InventoryProps) {
     this._id = props.id;
-    this._referenceId = props.referenceId;
-    this._referenceType = props.referenceType;
     this._stock = props.stock;
-    this._inStock = props.inStock;
+    this._inStock = props.stock > 0;
     this._warehouseLocation = props.warehouseLocation;
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
-    if (!this.id) {
-      throw new Error("Inventory must have a id");
-    }
-    if (!["product", "variant"].includes(this.referenceType))
-      throw new Error(
-        "Invenotry must reference either a product or a variant of a product"
-      );
-    if (!this.referenceId)
-      throw new Error("Inventory must reference a product or variant");
-    if (this.stock < 0) throw new Error("Quantity cannot be negative");
-    if (this.stock > 0 && !this.inStock)
-      throw new Error("inStock should be true when stock is greater than 0");
-    if (this.stock === 0 && this.inStock)
-      throw new Error("inStock should be false when stock is zero");
+    this._referenceRootId = props.referenceRootId;
+    this._referenceVariantId = props.referenceVariantId;
+    this.validate();
   }
 
-  public get referenceId() {
-    return this._referenceId;
+  private validate() {
+    if (!this._id) {
+      throw ValidationError.domainRule(
+        "id",
+        "id_exists",
+        "Inventory id missing",
+        this._id
+      );
+    }
+
+    if (!this.referenceRootId) {
+      throw ValidationError.domainRule(
+        "referenceRootId",
+        "referenceRootId_exists",
+        "Inventory must reference a product",
+        this._id
+      );
+    }
+
+    if (this.stock < 0) {
+      throw ValidationError.domainRule(
+        "stock",
+        "stock_positive",
+        "The stock must be positive",
+        this._id
+      );
+    }
+
+    if (this.stock > 0 && !this.inStock) {
+      throw ValidationError.domainRule(
+        "stock",
+        "in_stock_positive",
+        "InStock should be true when stock is greater than 0",
+        this._id
+      );
+    }
+
+    if (this.stock === 0 && this.inStock) {
+      throw ValidationError.domainRule(
+        "stock",
+        "in_stock_false",
+        "InStock should be false when stock is 0",
+        this._id
+      );
+    }
+  }
+
+  public get referenceRootId() {
+    return this._referenceRootId;
+  }
+
+  public get referenceVariantId() {
+    return this._referenceVariantId;
   }
   public get stock() {
     return this._stock;
@@ -43,15 +89,9 @@ export class InventoryEntity implements InventoryProps {
   public get inStock() {
     return this._inStock;
   }
-  public set stock(value: number) {
-    if (value < 0) throw new Error("Quantity cannot be negative");
-    this._stock = value;
-  }
+
   public get id() {
     return this._id;
-  }
-  public get referenceType() {
-    return this._referenceType;
   }
   public get warehouseLocation() {
     return this._warehouseLocation;
@@ -61,5 +101,48 @@ export class InventoryEntity implements InventoryProps {
   }
   public get updatedAt(): Date | undefined {
     return this._updatedAt;
+  }
+
+  public updateStock(stock: number) {
+    if (stock < 0) {
+      throw ValidationError.domainRule(
+        "stock",
+        "stock_positive",
+        "The stock must be positive",
+        this._id
+      );
+    }
+    this._stock = stock;
+    this._inStock = this._stock > 0;
+    this.changeTracker.mark("stock")
+    this.changeTracker.mark("inStock")
+  }
+
+  public updateWarehouseLocation(warehouseLocation: string) {
+    this._warehouseLocation = warehouseLocation;
+    this.changeTracker.mark("warehouseLocation")
+    
+  }
+
+  public clearWarehouseLocation() {
+    this._warehouseLocation = undefined;
+    this.changeTracker.mark("warehouseLocation")
+  }
+
+  public updateInventory(data: UpdateableInventoryType) {
+    if (data.stock !== undefined) {
+      this.updateStock(data.stock);
+    }
+    if (data.warehouseLocation !== undefined) {
+      if (data.warehouseLocation === null) {
+        this.clearWarehouseLocation();
+      } else {
+        this.updateWarehouseLocation(data.warehouseLocation);
+      }
+    }
+  }
+
+  public toUpdateObject() {
+    return this.changeTracker.toUpdate(this)
   }
 }

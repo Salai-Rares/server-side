@@ -1,11 +1,11 @@
 import { Request } from "express";
-import { CreateProductDto } from "../../schemas";
+
 import { ProductVariant } from "../../types";
-export function mapCreateProductRequest(req: Request): CreateProductDto {
+import { CreateProductType, VariantWithInventoryType } from "../../schemas/create-product.schema";
+export function mapCreateProductRequest(req: Request): CreateProductType {
     const product = req.body.product;
     const variants = product.variants || [];
     const files = req.files as Express.Multer.File[];
-  
     // 1. Parse primary image selections
     const mainPrimaryIndex = Number(req.body.primaryImageIndex ?? 0);
     const variantPrimaryIndices = Array.isArray(req.body.variantPrimary)
@@ -20,7 +20,7 @@ export function mapCreateProductRequest(req: Request): CreateProductDto {
   
     // 3. Process variants
     if (variants.length > 0) {
-      variants.forEach((variant: ProductVariant, variantIndex: number) => {
+      variants.forEach((variant: VariantWithInventoryType, variantIndex: number) => {
         const key = `variantImages[${variantIndex}]`;
         const variantFiles = fileMap[key] || [];
         const primaryIndex = variantPrimaryIndices[variantIndex] || 0;
@@ -33,7 +33,7 @@ export function mapCreateProductRequest(req: Request): CreateProductDto {
       });
       product.variants = variants;
     }
-  
+
     // 4. Process product images
     const productImages = fileMap["images"] || [];
     product.images = productImages.map((file, index) => ({

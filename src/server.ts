@@ -1,9 +1,8 @@
-import { app } from "./app";
+
 import  connectDB  from "./db/connect";
 import dotenv from "dotenv";
-
 dotenv.config();
-
+import { app } from "./app";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const start = async (): Promise<void> => {

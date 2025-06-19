@@ -5,7 +5,7 @@ export class ProductSkuVO {
 
   constructor(sku: string) {
     this.validateSku(sku);
-    this._value = sku.toUpperCase(); // Ensure consistent uppercase
+    this._value = sku.toUpperCase().trim(); // Ensure consistent uppercase
   }
 
   private validateSku(sku: string): void {

@@ -1,9 +1,9 @@
 import { InventoryEntity } from "@/modules/inventory/domain/inventory.entity";
 import { ProductEntity } from "../../domain/product.entity";
-import { CreateProductDto } from "../../schemas";
+import { CreateProductType } from "../../schemas";
 
 export interface IProductCreateService{
    createProductWithInventories(
-       dto: CreateProductDto
+       dto: CreateProductType
      ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }>
 }

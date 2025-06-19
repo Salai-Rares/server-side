@@ -1,42 +1,47 @@
 import { id, inject, injectable } from "inversify";
 import { IProductCreateService } from "../types";
-import { IProductRepository } from "../types/product.repository.types";
+import { IProductRepositoryWrite } from "../types/create/product-write.repository.types";
 import { TYPES } from "@/shared/types";
-import { CreateProductDto } from "../schemas";
+
 import { newHexStringId } from "@/shared/utils";
 import { ProductDtoToEntityMapper } from "../mappers/domain/dto-to-entity.mapper";
 import { ProductProps } from "../domain/product.types";
 import { ProductVariantEntity } from "../domain/variant-product.entity";
-import { ProductVariantMapper } from "../mappers/domain/variantDto-to-entity.mapper";
+import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
 import { InventoryEntity } from "@/modules/inventory/domain/inventory.entity";
 import { ProductEntity } from "../domain/product.entity";
 import slugify from "slugify";
 import { SlugVO } from "../domain/value-objects/slug.value-object";
-import { IInventoryRepository } from "@/modules/inventory/types";
+
 import mongoose from "mongoose";
 import { MongoServerError } from "mongodb";
 import { withRetry } from "@/shared/utils/retry";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { ILogger } from "@/core/logger/logger.interface";
+import { CreateProductType } from "../schemas";
+import { CreateInventoryType } from "@/modules/inventory/schemas/create-inventory.dto";
+import { IInventoryServiceCreate } from "@/modules/inventory/types/create/inventory-create.service.types";
+import { ImageVO } from "../domain/value-objects/image.value-object";
+
 @injectable()
 export class ProductCreateUseCase implements IProductCreateService {
   constructor(
-    @inject(TYPES.ProductRepository)
-    private productRepository: IProductRepository,
-    @inject(TYPES.InventoryRepository)
-    private inventoryRepository: IInventoryRepository,
+    @inject(TYPES.ProductWriteRepository)
+    private productRepository: IProductRepositoryWrite,
+    @inject(TYPES.InventoryCreateUseCase)
+    private inventoryService: IInventoryServiceCreate,
     @inject(TYPES.Logger) private logger: ILogger
   ) {}
 
   /**
-   * @description Create product along the inventory if provided. If the product has variants create also the invenotories for each of them if existing.
+   * @description Create product along the inventory if provided. If the product has variants create also the inventories for each of them if existing.
    * @responsability The create method has the responsability to validate the invariants that the product entity can't
    * @throws Error if the product has variants and also a root inventory
    * @throws Error if the name already exists
    *
    */
   async createProductWithInventories(
-    dto: CreateProductDto
+    dto: CreateProductType
   ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }> {
     const session = await mongoose.startSession();
     let result:
@@ -56,47 +61,64 @@ export class ProductCreateUseCase implements IProductCreateService {
           );
         }
 
-        // 2. Process variants
+        //2. Process root images
+        let images: ImageVO[] | undefined;
+        if (images && images.length > 0) {
+          images = dto.images?.map((image) => {
+            const id = newHexStringId();
+            return {
+              id,
+              ...image,
+            };
+          });
+        }
+
+        // 2. Process variants and prepare inventory requests
         let variants: ProductVariantEntity[] | undefined;
-        let inventoriesToSave: InventoryEntity[] = [];
+        let inventoryRequests: CreateInventoryType[] = [];
 
         if (hasVariants && dto.variants) {
           variants = dto.variants.map((v) => {
+            let variantImages: ImageVO[] | undefined;
             const variantId = newHexStringId();
 
+            // Add inventory request for variant if provided
             if (v.inventory) {
-              inventoriesToSave.push(
-                new InventoryEntity({
-                  id: newHexStringId(),
-                  referenceType: "variant",
-                  referenceId: variantId,
-                  ...v.inventory,
-                })
-              );
+              inventoryRequests.push({
+                referenceRootId: productId,
+                referenceVariantId: variantId,
+                stock: v.inventory.stock,
+                warehouseLocation: v.inventory.warehouseLocation,
+              });
             }
+
+            variantImages = v.images?.map((image) => ({
+              id: newHexStringId(),
+              ...image,
+            }));
 
             return new ProductVariantEntity({
               id: variantId,
+              images: variantImages,
               ...ProductVariantMapper.toDomain(
                 ProductVariantMapper.extractBaseProperties(v)
               ),
             });
           });
         } else if (dto.inventory) {
-          inventoriesToSave.push(
-            new InventoryEntity({
-              id: newHexStringId(),
-              referenceType: "product",
-              referenceId: productId,
-              ...dto.inventory,
-            })
-          );
+          // Add inventory request for root product
+          inventoryRequests.push({
+            referenceRootId: productId,
+            stock: dto.inventory.stock,
+            warehouseLocation: dto.inventory.warehouseLocation,
+          });
         }
 
         // 3. Create and save product
         const product = new ProductEntity({
           id: productId,
           ...ProductDtoToEntityMapper.mapToEntity(dto),
+          images,
           slug: SlugVO.fromName(dto.name),
           variants,
         });
@@ -105,19 +127,19 @@ export class ProductCreateUseCase implements IProductCreateService {
           session,
         });
 
-        // 4. Save inventories
+        // 4. Save inventories using the service
         let savedInventories: InventoryEntity[] | undefined;
-        if (inventoriesToSave.length) {
+        if (inventoryRequests.length > 0) {
           savedInventories =
-            inventoriesToSave.length === 1
+            inventoryRequests.length === 1
               ? [
-                  await this.inventoryRepository.saveInventory(
-                    inventoriesToSave[0],
+                  await this.inventoryService.saveInventory(
+                    inventoryRequests[0],
                     { session }
                   ),
                 ]
-              : await this.inventoryRepository.saveBulkInventories(
-                  inventoriesToSave,
+              : await this.inventoryService.saveBulkInventories(
+                  inventoryRequests,
                   { session }
                 );
         }
@@ -135,7 +157,6 @@ export class ProductCreateUseCase implements IProductCreateService {
           new Error("Transaction result is undefined")
         );
       }
-
       return result;
     } finally {
       try {

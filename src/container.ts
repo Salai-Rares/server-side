@@ -21,11 +21,14 @@ import { CategoryService } from "./modules/category/services/category.service";
 import { ICategoryRepository } from "@/modules/category/types";
 import { CategoryRepository } from "./modules/category/repositories/category.repository";
 import { ValidateCreateCategory } from "./middleware/products/category.middleware";
-import { IProductRepository } from "./modules/product/types/product.repository.types";
-import ProductRepository from "./modules/product/repositories/product.repository";
+import {
+  IProductRepositoryWrite,
+} from "./modules/product/types/create/product-write.repository.types";
+import { IProductRepositoryRead } from "./modules/product/types/read/product-read.repository.types";
+import ProductRepository from "./modules/product/repositories/product-write.repository";
 import { ProductCreateUseCase } from "./modules/product/services/product-create.service";
-import { IInventoryRepository } from "./modules/inventory/types";
-import { InventoryRepository } from "./modules/inventory/repositories/inventory.repository";
+import { IInventoryRepositoryRead, IInventoryRepositoryWrite, IInventoryServiceRead } from "./modules/inventory/types";
+import { InventoryRepositoryWrite } from "./modules/inventory/repositories/inventory-write.repository";
 import { ProductController } from "./modules/product/controllers/product.controller";
 import { ErrorLogger } from "./shared/errors/api-error/ErrorLogger";
 import { ErrorConverter } from "./shared/errors/api-error/ErrorConverter";
@@ -33,7 +36,20 @@ import { ErrorDetectors } from "./shared/errors/api-error/ErrorDetectors";
 import { RequestContextBuilder } from "./shared/errors/api-error/RequestContextBuilder";
 import { ILogger } from "./core/logger/logger.interface";
 import { LoggerService } from "./core/logger/logger.service";
-
+import { IInventoryServiceCreate } from "./modules/inventory/types/create/inventory-create.service.types";
+import { InventoryCreateUseCase } from "./modules/inventory/services/inventory-create.service";
+import { ProductReadRepository } from "./modules/product/repositories/product-read.repository";
+import { IProductReadService } from "./modules/product/types/read/read-product.service.types";
+import { ProductReadUseCase } from "./modules/product/services/product-read.service";
+import { ProductUpdateUseCase } from "./modules/product/services/product-update.serivce";
+import { IProductUpdateService } from "./modules/product/types/update/product-update.service.types";
+import { IProductCreateService } from "./modules/product/types";
+import { IInventoryServiceUpdate } from "./modules/inventory/types/update/inventory-update.service.types";
+import { InventoryUpdateUseCase } from "./modules/inventory/services/inventory-update.service";
+import { InventoryRepositoryRead } from "./modules/inventory/repositories/inventory-read.repository";
+import { InventoryReadUseCase } from "./modules/inventory/services/inventory-read.service";
+import { IInventoryRepositoryUpdate } from "./modules/inventory/types/update/inventory-update.repository.types";
+import { InventoryRepositoryUpdate } from "./modules/inventory/repositories/inventory-update.repository";
 
 // Create Inversify Container
 const container = new Container();
@@ -76,24 +92,51 @@ container
   .to(CategoryRepository);
 container
   .bind<ValidateCreateCategory>(TYPES.ValidateCreateCategory)
-  .to(ValidateCreateCategory)
-  ;
+  .to(ValidateCreateCategory);
 container
-  .bind<IProductRepository>(TYPES.ProductRepository)
+  .bind<IProductRepositoryWrite>(TYPES.ProductWriteRepository)
   .to(ProductRepository)
   .inSingletonScope();
 container
-  .bind<ProductCreateUseCase>(TYPES.ProductCreateUseCase)
+  .bind<IProductCreateService>(TYPES.ProductCreateUseCase)
   .to(ProductCreateUseCase)
   .inSingletonScope();
 container
-  .bind<IInventoryRepository>(TYPES.InventoryRepository)
-  .to(InventoryRepository)
+  .bind<IInventoryRepositoryWrite>(TYPES.InventoryRepositoryWrite)
+  .to(InventoryRepositoryWrite)
   .inSingletonScope();
-  container.bind<ProductController>(ProductController).toSelf();
-  container.bind<ErrorLogger>(TYPES.ErrorLogger).to(ErrorLogger).inSingletonScope();
-  container.bind<ErrorConverter>(TYPES.ErrorConverter).to(ErrorConverter).inSingletonScope();
-  container.bind<RequestContextBuilder>(TYPES.RequestContextBuilder).to(RequestContextBuilder).inSingletonScope();
-  container.bind<ILogger>(TYPES.Logger).to(LoggerService).inSingletonScope();
-
+container.bind<ProductController>(ProductController).toSelf();
+container
+  .bind<ErrorLogger>(TYPES.ErrorLogger)
+  .to(ErrorLogger)
+  .inSingletonScope();
+container
+  .bind<ErrorConverter>(TYPES.ErrorConverter)
+  .to(ErrorConverter)
+  .inSingletonScope();
+container
+  .bind<RequestContextBuilder>(TYPES.RequestContextBuilder)
+  .to(RequestContextBuilder)
+  .inSingletonScope();
+container.bind<ILogger>(TYPES.Logger).to(LoggerService).inSingletonScope();
+container
+  .bind<IInventoryServiceCreate>(TYPES.InventoryCreateUseCase)
+  .to(InventoryCreateUseCase)
+  .inSingletonScope();
+container
+  .bind<IProductRepositoryRead>(TYPES.ProductReadRepository)
+  .to(ProductReadRepository)
+  .inSingletonScope();
+container
+  .bind<IProductReadService>(TYPES.ProductReadUseCase)
+  .to(ProductReadUseCase)
+  .inSingletonScope();
+container
+  .bind<IProductUpdateService>(TYPES.ProductUpdateUseCase)
+  .to(ProductUpdateUseCase)
+  .inSingletonScope();
+  container.bind<IInventoryServiceUpdate>(TYPES.InventoryUpdateUseCase).to(InventoryUpdateUseCase).inSingletonScope();
+  container.bind<IInventoryRepositoryRead>(TYPES.InventoryRepositoryRead).to(InventoryRepositoryRead).inSingletonScope();
+  container.bind<IInventoryServiceRead>(TYPES.InventoryReadUseCase).to(InventoryReadUseCase).inSingletonScope()
+  container.bind<IInventoryRepositoryUpdate>(TYPES.InventoryRepositoryUpdate).to(InventoryRepositoryUpdate).inSingletonScope();
 export { container };

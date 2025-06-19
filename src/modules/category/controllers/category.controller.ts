@@ -49,7 +49,8 @@ export class CategoryController extends BaseHttpController {
   @httpGet("/category/findall")
   async findAllCategories(req:Request,res:Response):Promise<void> {
     const result = await this.categoryService.findAllCategoryList();
-    console.log(result);
+    
+   
     res.status(200).json({
       success:true,
       data:result

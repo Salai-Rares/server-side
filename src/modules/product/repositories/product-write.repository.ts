@@ -1,14 +1,15 @@
 import Product from "../models/product";
 import { ClientSession, PipelineStage, Types } from "mongoose";
-import { QueryFiltersObject } from "../types/product-query-filter.types";
-import { IProductRepository } from "../types/product.repository.types";
-import { CreateProductDto, UpdateProductDto } from "../schemas";
+
+import { IProductRepositoryWrite } from "../types/create/product-write.repository.types";
+
 import { ProductEntity } from "../domain/product.entity";
 import { ProductEntityToPersistanceMapper } from "../mappers/domain/entity-to-db.mapper";
 import { ProductFromPersistanceToEntityMapper } from "../mappers/domain/db-to-entity.mapper";
 import { IProductLean } from "../types";
+import { toObjectId } from "@/shared/utils";
 
-class ProductRepository implements IProductRepository {
+class ProductRepository implements IProductRepositoryWrite {
   async saveProduct(
     product: ProductEntity,
     options?: { session?: ClientSession }

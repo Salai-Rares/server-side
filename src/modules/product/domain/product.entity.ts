@@ -11,6 +11,16 @@ import { ProductSkuVO } from "./value-objects/sku.value-object";
 import { SlugVO } from "./value-objects/slug.value-object";
 import { ProductStatus } from "./value-objects/status.value-object";
 import { ProductVariantEntity } from "./variant-product.entity";
+import {
+  ProductDomainUpdateType,
+  UpdateDiscountType,
+  UpdatePriceType,
+  UpdateSeoMetaType,
+
+} from "../schemas";
+import { newHexStringId } from "@/shared/utils";
+import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
+import { ImageVO } from "./value-objects/image.value-object";
 
 export class ProductEntity implements ProductProps {
   private readonly _id: string;
@@ -20,7 +30,7 @@ export class ProductEntity implements ProductProps {
   private _brand?: string;
   private _categories: string[];
   private _tags?: string[];
-  private _images: ProductImage[];
+  private _images?: ImageVO[];
   private _price: PriceVO;
   private _discount?: DiscountVO;
   private _hasVariants: boolean;
@@ -46,8 +56,9 @@ export class ProductEntity implements ProductProps {
     this._images = props.images;
     this._price = props.price;
     this._discount = props.discount;
-    this._hasVariants = this.calculateHasVariants();
     this._variants = props.variants;
+    this._hasVariants = this.calculateHasVariants();
+
     this._isFeatured = props.isFeatured;
     this._status = props.status;
     this._ratings = props.ratings;
@@ -108,8 +119,8 @@ export class ProductEntity implements ProductProps {
   get tags(): string[] | undefined {
     return this._tags ? [...this._tags] : undefined;
   }
-  get images(): ProductImage[] {
-    return [...this._images];
+  get images(): ImageVO[] | undefined {
+    return this._images ? [...this._images] : undefined;
   }
   get price(): PriceVO {
     return this._price;
@@ -170,7 +181,7 @@ export class ProductEntity implements ProductProps {
     this._name = newName.trim();
   }
 
-  updateDescription(newDescription: ProductDescriptionVO): void {
+  updateDescription(newDescription: string): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
         "description",
@@ -179,9 +190,9 @@ export class ProductEntity implements ProductProps {
         this._id
       );
     }
-    this._description = newDescription;
+    this._description = new ProductDescriptionVO(newDescription);
   }
-  updateShortDescription(newShortDescription: ShortProductDescriptionVO): void {
+  updateShortDescription(newShortDescription: string): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
         "shortDescription",
@@ -191,7 +202,7 @@ export class ProductEntity implements ProductProps {
       );
     }
 
-    this._shortDescription = newShortDescription;
+    this._shortDescription = new ShortProductDescriptionVO(newShortDescription);
   }
   clearShortDescription(): void {
     if (this._status.isDeleted()) {
@@ -232,6 +243,18 @@ export class ProductEntity implements ProductProps {
     this._brand = undefined;
   }
 
+  updateCategories(newCategories: string[]): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "categories",
+        "immutable_when_deleted",
+        "Cannot update categories of deleted product",
+        this._id
+      );
+    }
+    this._categories = [...newCategories];
+  }
+
   updateTags(newTags: string[]): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -258,8 +281,18 @@ export class ProductEntity implements ProductProps {
 
     this._tags = undefined;
   }
-
-  updatePrice(newPrice: PriceVO): void {
+  updateImages(newImages: []): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "images",
+        "immutable_when_deleted",
+        "Cannot update images of deleted product",
+        this._id
+      );
+    }
+    this._images = [...newImages];
+  }
+  updatePrice(priceUpdate: UpdatePriceType): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
         "price",
@@ -268,6 +301,13 @@ export class ProductEntity implements ProductProps {
         this._id
       );
     }
+
+    // Use current values if not provided
+    const newAmount = priceUpdate.amount ?? this._price.amount;
+    const newCurrency = priceUpdate.currency ?? this._price.currency;
+
+    const newPrice = new PriceVO({ amount: newAmount, currency: newCurrency });
+
     // Business rule: Large price changes on active products might need approval
     if (this._status.isActive()) {
       const changePercentage =
@@ -291,7 +331,7 @@ export class ProductEntity implements ProductProps {
     this._price = newPrice;
   }
 
-  updateDiscount(newDiscount: DiscountVO): void {
+  updateDiscount(discountUpdate: UpdateDiscountType): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
         "discount",
@@ -301,19 +341,40 @@ export class ProductEntity implements ProductProps {
       );
     }
 
-    // Business rule: Discount cannot be greater than price
-    const discountAmount =
-      newDiscount.type === "percentage"
-        ? (this._price.amount * newDiscount.value) / 100
-        : newDiscount.value;
+    // Use current values if not provided (for partial updates)
+    const newType = discountUpdate.type ?? this._discount?.type;
+    const newValue = discountUpdate.value ?? this._discount?.value;
+    const newValidUntil =
+      discountUpdate.validUntil ?? this._discount?.validUntil;
 
-    if (discountAmount >= this._price.amount) {
+    // Ensure we have required fields for creating the VO
+    if (!newType || newValue === undefined) {
       throw ValidationError.domainRule(
         "discount",
-        "cannot_exceed_price",
-        "Discount cannot be equal to or greater than product price",
-        { discount: discountAmount, price: this._price.amount }
+        "missing_required_fields",
+        "Discount type and value are required for update",
+        this._id
       );
+    }
+    const newDiscount = new DiscountVO({
+      type: newType,
+      value: newValue,
+      validUntil: newValidUntil,
+    });
+
+    // Business rule: Only validate fixed discounts against price
+    if (newDiscount.type === "fixed") {
+      if (newDiscount.value >= this._price.amount) {
+        throw ValidationError.domainRule(
+          "discount",
+          "fixed_discount_exceeds_price",
+          "Fixed discount cannot be equal to or greater than product price",
+          {
+            discountValue: newDiscount.value,
+            productPrice: this._price.amount,
+          }
+        );
+      }
     }
 
     this._discount = newDiscount;
@@ -331,36 +392,186 @@ export class ProductEntity implements ProductProps {
 
     this._discount = undefined;
   }
-
-  updateVariants(newVariants: ProductVariantEntity[]): void {
+  updateFeatured(isFeatured: boolean): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
-        "variants",
+        "isFeatured",
         "immutable_when_deleted",
-        "Cannot update variants of deleted product",
+        "Cannot update featured status of deleted product",
+        this._id
+      );
+    }
+    this._isFeatured = isFeatured;
+  }
+
+  clearFeatured(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "isFeatured",
+        "immutable_when_deleted",
+        "Cannot clear featured status of deleted product",
+        this._id
+      );
+    }
+    this._isFeatured = undefined;
+  }
+  updateSeo(seoUpdate: UpdateSeoMetaType): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "seo",
+        "immutable_when_deleted",
+        "Cannot update SEO of deleted product",
         this._id
       );
     }
 
-    // Validate variant SKUs are unique (if any variants provided)
-    if (newVariants.length > 0) {
-      this.validateVariantSkus(newVariants);
+    if (this._seo) {
+      const updatedSeoData = {
+        title: seoUpdate.title ?? this._seo.title,
+        description: seoUpdate.description
+          ? new ShortProductDescriptionVO(seoUpdate.description)
+          : this._seo.description,
+        keywords: seoUpdate.keywords ?? this._seo.keywords,
+        cannonicalUrl: seoUpdate.cannonicalUrl ?? this._seo.cannonicalUrl,
+      };
+      this._seo = new SeoMetaVO(updatedSeoData);
+    } else {
+      if (
+        !seoUpdate.title ||
+        !seoUpdate.description ||
+        !seoUpdate.keywords ||
+        !seoUpdate.cannonicalUrl
+      ) {
+        throw ValidationError.domainRule(
+          "seo",
+          "required_fields",
+          "All SEO fields (title, description, keywords, cannonicalUrl) are required when creating new SEO",
+          {
+            provided: Object.keys(seoUpdate),
+            missing: [
+              !seoUpdate.title && "title",
+              !seoUpdate.description && "description",
+              !seoUpdate.keywords && "keywords",
+              !seoUpdate.cannonicalUrl && "cannonicalUrl",
+            ].filter(Boolean),
+          }
+        );
+      }
+      // All fields are guaranteed to be defined here
+      this._seo = new SeoMetaVO({
+        title: seoUpdate.title,
+        description: new ShortProductDescriptionVO(seoUpdate.description),
+        keywords: seoUpdate.keywords,
+        cannonicalUrl: seoUpdate.cannonicalUrl,
+      });
     }
-
-    // Update variants
-    this._variants = newVariants.length > 0 ? newVariants : undefined;
-
-    // Auto-recalculate hasVariants
-    this._hasVariants = this.calculateHasVariants();
   }
 
-   clearVariants(): void {
+  clearSeo(): void {
     if (this._status.isDeleted()) {
-      throw ValidationError.domainRule('variants', 'immutable_when_deleted', 
-        'Cannot clear variants of deleted product', this._id);
+      throw ValidationError.domainRule(
+        "seo",
+        "immutable_when_deleted",
+        "Cannot clear SEO of deleted product",
+        this._id
+      );
+    }
+    this._seo = undefined;
+  }
+
+  updateAttributes(newAttributes: AllUniqueKeyAndValuesFilters): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "attributes",
+        "immutable_when_deleted",
+        "Cannot update attributes of deleted product",
+        this._id
+      );
+    }
+    this._attributes = newAttributes;
+  }
+
+  clearAttributes(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "attributes",
+        "immutable_when_deleted",
+        "Cannot clear attributes of deleted product",
+        this._id
+      );
+    }
+    this._attributes = undefined;
+  }
+
+  updateMultiple(updates: ProductDomainUpdateType): void {
+    if (updates.name !== undefined) {
+      this.updateName(updates.name);
     }
 
-    this._variants = undefined;
-    this._hasVariants = false; // Auto-update
+    if (updates.description !== undefined) {
+      this.updateDescription(updates.description);
+    }
+
+    if (updates.shortDescription !== undefined) {
+      if (updates.shortDescription === null) {
+        this.clearShortDescription();
+      } else {
+        this.updateShortDescription(updates.shortDescription);
+      }
+    }
+
+    if (updates.brand !== undefined) {
+      if (updates.brand === null) {
+        this.clearBrand();
+      } else {
+        this.updateBrand(updates.brand);
+      }
+    }
+
+    if (updates.tags !== undefined) {
+      if (updates.tags === null) {
+        this.clearTags();
+      } else {
+        this.updateTags(updates.tags);
+      }
+    }
+
+    
+
+    if (updates.price !== undefined) {
+      this.updatePrice(updates.price);
+    }
+
+    if (updates.discount !== undefined) {
+      if (updates.discount === null) {
+        this.clearDiscount();
+      } else {
+        this.updateDiscount(updates.discount);
+      }
+    }
+
+    if (updates.isFeatured !== undefined) {
+      if (updates.isFeatured === null) {
+        this.clearFeatured();
+      } else {
+        this.updateFeatured(updates.isFeatured);
+      }
+    }
+
+    if (updates.seo !== undefined) {
+      if (updates.seo === null) {
+        this.clearSeo();
+      } else {
+        this.updateSeo(updates.seo);
+      }
+    }
+
+    if (updates.attributes !== undefined) {
+      if (updates.attributes === null) {
+        this.clearAttributes();
+      } else {
+        this.updateAttributes(updates.attributes);
+      }
+    }
   }
 }

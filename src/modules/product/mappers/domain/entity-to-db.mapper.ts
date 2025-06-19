@@ -1,6 +1,8 @@
 import { toObjectId } from "@/shared/utils";
 import { ProductEntity } from "../../domain/product.entity";
 import { IProduct } from "../../types";
+import { id } from "inversify";
+import { VariantEntityToDbMapper } from "./variant/entity-to-db.variant.mapper";
 
 export class ProductEntityToPersistanceMapper {
   static mapToPersistence(
@@ -16,20 +18,18 @@ export class ProductEntityToPersistanceMapper {
       brand: entity.brand ? toObjectId(entity.brand) : undefined,
       categories: entity.categories.map((id) => toObjectId(id)),
       tags: entity.tags,
-      images: entity.images,
+      images: entity.images?.map((image) => ({
+        ...image,
+        _id: toObjectId(image.id),
+        id: undefined,
+      })),
       price: {
         amount: entity.price.amount,
         currency: entity.price.currency,
       },
       discount: entity.discount,
       hasVariants: entity.hasVariants,
-      variants: entity.variants?.map((variant) => ({
-        _id: toObjectId(variant.id),
-        sku: variant.sku.value,
-        productOptions: variant.productOptions as Readonly<Map<string,string>>,
-        price: variant.price,
-        images: variant.images,
-      })),
+      variants: entity.variants?.map(VariantEntityToDbMapper.variantEntityToModel),
       isFeatured: entity.isFeatured,
       status: entity.status.value,
       ratings: entity.ratings,

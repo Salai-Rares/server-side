@@ -5,10 +5,9 @@ export class InventoryPersistanceToEntityMapper{
     static inventoryModelToEntity(model: IInventoryDocument): InventoryEntity {
     return new InventoryEntity({
         id: model._id.toString(),
-        referenceType: model.referenceType,
-        referenceId: model.referenceId.toString(),
+        referenceRootId: model.referenceRootId.toHexString(),
+        referenceVariantId: model.referenceVariantId ? model.referenceVariantId.toHexString() : undefined,
         stock: model.stock,
-        inStock: model.inStock,
         warehouseLocation: model.warehouseLocation,
         createdAt: model.createdAt,
         updatedAt: model.updatedAt

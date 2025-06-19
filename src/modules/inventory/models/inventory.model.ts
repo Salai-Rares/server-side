@@ -4,8 +4,8 @@ import { IInventoryDocument } from "../types";
 
 const InventorySchema = new Schema<IInventoryDocument>(
   {
-    referenceType:{type:String,enum:["product","variant"],required:true},
-    referenceId: { type: Schema.Types.ObjectId, required:true },
+    referenceRootId:{type: Schema.Types.ObjectId,required:true},
+    referenceVariantId: { type: Schema.Types.ObjectId, required:false },
     stock: { type: Number, required: true ,min:0,default:0},
     inStock: { type: Boolean, required: true,default:false },
     warehouseLocation: { type: String },

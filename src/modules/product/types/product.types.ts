@@ -18,7 +18,7 @@ export interface IProductBase {
   //will be added to the list of attributes
   tags?: string[]; //e.g. ["eco-friendly","bestseller"]
 
-  images: ProductImage[];
+  images?: ProductImage[];
   price: PriceType;
   discount?: DiscountType;
   //variants.productOptions will be added to the list of attributes
@@ -47,6 +47,7 @@ export interface IProductDocument extends Document , IProductBase{
 }
 export type IProductLean = LeanDocument<IProduct>;
 export interface ProductImage extends ImageMeta {
+  _id:Types.ObjectId;
   isPrimary: boolean;
 }
 

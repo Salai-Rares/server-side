@@ -1,8 +1,8 @@
 import { Types, Document } from "mongoose";
 
 export interface IInventoryBase {
-  referenceId: Types.ObjectId;
-  referenceType: "product" | "variant";
+  referenceRootId: Types.ObjectId;
+  referenceVariantId?: Types.ObjectId;
   stock: number;
   inStock: boolean;
   warehouseLocation?: string;

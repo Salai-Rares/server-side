@@ -19,7 +19,7 @@ export function expressLoggingMiddleware(req: Request, res: Response, next: Next
   });
 
   res.on('finish', () => {
-    const duration = Date.now() - start;
+    const duration = `${Date.now() - start}ms`;
     const statusCode = res.statusCode;
 
     // Only log successful requests and redirects

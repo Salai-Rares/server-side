@@ -27,7 +27,6 @@ const ProductImageSchema = new Schema<ProductImage>(
     alt: { type: String },
     isPrimary: { type: Boolean, default: false },
   },
-  { _id: false }
 );
 
 const PriceSchema = new Schema<PriceType>(
@@ -63,7 +62,7 @@ const VariantSchema = new Schema<ProductVariant>({
   productOptions: { type: Map, of: String, required: true },
   price: { type: PriceSchema },
 
-  images: { type: [ProductImageSchema], default: [] },
+  images: { type: [ProductImageSchema] },
 });
 
 const RatingSummarySchema = new Schema<RatingSummary>(
@@ -112,7 +111,7 @@ const ProductSchema = new Schema<IProductDocument>(
       default: [],
     },
 
-    images: { type: [ProductImageSchema], required: true },
+    images: { type: [ProductImageSchema]},
     price: { type: PriceSchema, required: true },
     discount: { type: DiscountSchema },
     hasVariants: { type: Boolean, default: false },

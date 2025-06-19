@@ -3,6 +3,7 @@ import { AllUniqueKeyAndValuesFilters } from "../types/product-query-filter.type
 import { ProductDescriptionVO } from "./value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "./value-objects/description/short-description.value-object";
 import { DiscountVO } from "./value-objects/discount.value-object";
+import { ImageVO } from "./value-objects/image.value-object";
 import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "./value-objects/sku.value-object";
@@ -20,7 +21,7 @@ export interface ProductProps{
     brand?:string,
     categories:string[],
     tags?:string[],
-    images:ProductImage[],
+    images?:ImageVO[],
     price:PriceVO,
     discount?:DiscountVO,
     variants?:ProductVariantEntity[],

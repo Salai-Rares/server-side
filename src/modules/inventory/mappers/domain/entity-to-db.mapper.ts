@@ -9,8 +9,8 @@ export class InventoryEntityToPersistanceMapper {
   ): Omit<IInventory, "createdAt" | "updatedAt"> {
     return {
       _id: toObjectId(entity.id), // convert string ID to ObjectId
-      referenceId: new Types.ObjectId(entity.referenceId),
-      referenceType: entity.referenceType,
+      referenceRootId: toObjectId(entity.referenceRootId),
+      referenceVariantId : entity.referenceVariantId ? toObjectId(entity.referenceVariantId) : undefined,
       stock: entity.stock,
       inStock: entity.inStock,
       warehouseLocation: entity.warehouseLocation,
