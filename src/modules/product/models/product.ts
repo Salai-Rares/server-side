@@ -20,6 +20,7 @@ import {
   Filter,
 } from "../types/product-query-filter.types";
 import { boolean } from "zod";
+import { PRODUCT_LIMITS } from "../constants/product-validation.constants";
 
 const ProductImageSchema = new Schema<ProductImage>(
   {
@@ -50,7 +51,6 @@ const VariantSchema = new Schema<ProductVariant>({
   sku: {
     type: String,
     required: true,
-    unique: true,
     validate: {
       validator: (v: string) =>
         /^[A-ZĂÂÎȘȚ]{2,4}-[A-ZĂÂÎȘȚ0-9]{2,10}(-[A-ZĂÂÎȘȚ0-9]{2,10}){0,2}$/.test(
@@ -120,8 +120,8 @@ const ProductSchema = new Schema<IProductDocument>(
     isFeatured: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["draft", "active", "archived", "deleted"],
-      default: "draft",
+      enum: PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES,
+      default:PRODUCT_LIMITS.STATUS.DEFAULT_VALUE,
       required: true,
     },
 

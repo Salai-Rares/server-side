@@ -64,7 +64,8 @@ export const PRODUCT_LIMITS = {
     DEFAULT:'LEU'
  },
  STATUS:{
-    DEFAULT:["draft", "active", "archived", "deleted"]
+    POSSIBLE_VALUES:["draft", "active", "archived", "deleted"],
+    DEFAULT_VALUE:"draft"
  },
  AUDIT: {
    REASON_MAX_LENGTH: 1000,

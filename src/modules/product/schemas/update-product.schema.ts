@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  InventoryOperationSchema,
   InventorySchema,
   UpdateInventoryByIDSchema,
 } from "@/modules/inventory/schemas/inventory.dto";
@@ -49,7 +50,8 @@ const VariantUpdateSchema = z
     id: z.string(),
     productOptions: z.record(z.string()).optional(),
     price: UpdatePriceSchema.nullable().optional(),
-    inventory: UpdateInventoryByIDSchema.optional(),
+    inventory: InventoryOperationSchema.optional(),
+
     images: ImageOperationsSchema.optional(), // Granular image operations for variants
   })
   .strip();
@@ -120,7 +122,7 @@ export const UpdateProductRequestSchema = z
   .object({
     productDomain: ProductDomainUpdateSchema.optional(),
     imageOperations: ImageOperationsSchema.optional(),
-    inventory: UpdateInventoryByIDSchema.optional(),
+    inventory: InventoryOperationSchema.optional(),
     variantOperations: VariantOperationsSchema.optional(),
     reason: z.string().max(PRODUCT_LIMITS.AUDIT.REASON_MAX_LENGTH).optional(),
     uploadedMap: z.record(z.string(), z.coerce.number()).optional(),
@@ -241,6 +243,20 @@ export const UpdateProductRequestSchema = z
             message: `Temp ID "${tempId}" is used ${count} times — must be unique`,
           });
         }
+      });
+    }
+
+    /* ================= INVENTORY VALIDATION ==================*/
+    const isRootInventoryOperation = inventory?.create || inventory?.update;
+    const hasAnyVariantOperations =
+      (variantOperations?.add?.length ?? 0) > 0 ||
+      (variantOperations?.update?.length ?? 0) > 0;
+    if (isRootInventoryOperation && hasAnyVariantOperations) {
+      ctx.addIssue({
+        path: ["inventory"],
+        code: z.ZodIssueCode.custom,
+        message:
+          "Cannot perform root inventory operation while variant operations exist. Variants are not allowed when using root inventory.",
       });
     }
   });

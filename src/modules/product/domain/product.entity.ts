@@ -9,7 +9,7 @@ import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "./value-objects/sku.value-object";
 import { SlugVO } from "./value-objects/slug.value-object";
-import { ProductStatus } from "./value-objects/status.value-object";
+import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "./variant-product.entity";
 import {
   ProductDomainUpdateType,
@@ -36,7 +36,7 @@ export class ProductEntity implements ProductProps {
   private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
   private _isFeatured?: boolean;
-  private _status: ProductStatus;
+  private _status: EntityStatusVO;
   private _ratings: RatingSummary;
   private _reviewsCount: number;
   private _seo?: SeoMetaVO;
@@ -137,7 +137,7 @@ export class ProductEntity implements ProductProps {
   get isFeatured(): boolean | undefined {
     return this._isFeatured;
   }
-  get status(): ProductStatus {
+  get status(): EntityStatusVO {
     return this._status;
   }
   get ratings(): RatingSummary {

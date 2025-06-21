@@ -35,6 +35,9 @@ import { IProductUpdateService } from "../types/update/product-update.service.ty
 import { IProductCreateService } from "../types/create/product-create.service.types";
 import { ValidationError } from "@/shared/errors/ValidationError";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
+import { ProductEntityToResponseDtoMapper } from "../mappers/domain/entity-to-response.mapper";
+import { InventoryEntityToResponseDtoMapper } from "@/modules/inventory/mappers/domain/entity-to-dto.mapper";
+import { ProductCreateInputAssembler } from "./assemblers/product-create-input.assembler";
 const productsImageUpload = createMulterUpload({
   destination: path.resolve(__dirname, "../../../images/products"),
   mimetypes: {
@@ -53,37 +56,30 @@ export class ProductController extends BaseHttpController {
     @inject(TYPES.CategoryService) private categoryService: ICategoryService,
     @inject(TYPES.ProductCreateUseCase)
     private productCreateUseCase: IProductCreateService,
-    @inject(TYPES.ProductUpdateUseCase) private productUpdateUseCase : IProductUpdateService,
+    @inject(TYPES.ProductUpdateUseCase)
+    private productUpdateUseCase: IProductUpdateService,
     @inject(TYPES.Logger) private logger: ILogger
   ) {
     super();
   }
 
-  @httpPost(
-    "/create",
-    productsImageUpload.raw(),
-    processImagesMiddleware,
-    cleanupUploadedFiles
-  )
+  @httpPost("/create", productsImageUpload.raw(), cleanupUploadedFiles)
   async createProduct(req: ProcessedRequest, res: Response): Promise<void> {
-    const productData = req.body.product;
-    if (req.processedImages?.productImages) {
-      productData.images = req.processedImages.productImages;
-    }
-    if (req.processedImages?.variantImages && productData.variants) {
-      const variantImages = req.processedImages.variantImages;
-      const variants = productData.variants;
-      variants.forEach((variant: any, index: number) => {
-        if (variantImages[index]) {
-          variant.images = variantImages[index];
-        }
-      });
-    }
-    const dto = CreateProductSchema.parse(productData);
+    
+    const dto = ProductCreateInputAssembler.assemble(
+      req.body,
+      req.files as Express.Multer.File[]
+    );
 
     const { product, inventories } =
       await this.productCreateUseCase.createProductWithInventories(dto);
-    res.status(200).json({ status: "success", data: { product, inventories } });
+    const resultProduct = ProductEntityToResponseDtoMapper.toDto(product);
+    const inventoriesResult = inventories?.map(
+      InventoryEntityToResponseDtoMapper.toDto
+    );
+    res
+      .status(200)
+      .json({ status: "success", data: { resultProduct, inventoriesResult } });
   }
 
   @httpPatch("/:id", productsImageUpload.array("images"), cleanupUploadedFiles)
@@ -99,9 +95,14 @@ export class ProductController extends BaseHttpController {
     const fileCount = files?.length ?? 0;
 
     if (uploadedMapSize !== fileCount) {
-      return next(ApiError.businessRuleViolation(`Uploaded file count mismatch: expected ${uploadedMapSize}, got ${fileCount}`,"uploadedMap_equal_size_with_files"));
+      return next(
+        ApiError.businessRuleViolation(
+          `Uploaded file count mismatch: expected ${uploadedMapSize}, got ${fileCount}`,
+          "uploadedMap_equal_size_with_files"
+        )
+      );
     }
-   const {product, inventories} = await this.productUpdateUseCase.updateProductWithInventories(productId,{dto,files})
+    //  const {product, inventories} = await this.productUpdateUseCase.updateProductWithInventories(productId,{dto,files})
 
     res.status(200).json({ status: "success", data: dto });
     return;

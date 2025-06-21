@@ -84,7 +84,7 @@ export const AttributeSchema = z
   })
   .strip();
 
-export const ProductStatusEnum = z.enum(PRODUCT_LIMITS.STATUS.DEFAULT);
+export const ProductStatusEnum = z.enum(PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES);
 
 // ===============================
 // VARIANT SCHEMAS
@@ -152,7 +152,6 @@ export const ProductCoreSchema = z.object({
   price: PriceSchema,
   discount: DiscountSchema.optional(),
   isFeatured: z.boolean().optional(),
-  status: ProductStatusEnum.default("draft"),
   seo: SeoMetaSchema.optional(),
   attributes: z.array(AttributeSchema).optional(),
 });

@@ -3,6 +3,7 @@ import  connectDB  from "./db/connect";
 import dotenv from "dotenv";
 dotenv.config();
 import { app } from "./app";
+import { initAllIndexes } from "./shared/database/init-indexes";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const start = async (): Promise<void> => {
@@ -11,6 +12,7 @@ const start = async (): Promise<void> => {
       throw new Error("MONGO_URI missing in .env");
     }
     await connectDB(process.env.MONGO_URI);
+    await initAllIndexes();
     app.listen(port, () => console.log(`Server running on port ${port}`));
   } catch (error) {
     console.error("Server startup failed:", error);

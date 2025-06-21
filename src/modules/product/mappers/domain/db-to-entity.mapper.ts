@@ -8,7 +8,7 @@ import { PriceVO } from "../../domain/value-objects/price.value-object";
 import { SeoMetaVO } from "../../domain/value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "../../domain/value-objects/sku.value-object";
 import { SlugVO } from "../../domain/value-objects/slug.value-object";
-import { ProductStatus } from "../../domain/value-objects/status.value-object";
+import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "../../domain/variant-product.entity";
 import { IProductDocument, IProductLean } from "../../types";
 import { VariantProductFromPersistanceToEntity } from "./variant/db-to-variantEntity.mapper";
@@ -30,9 +30,10 @@ export class ProductFromPersistanceToEntityMapper {
       categories: dbData.categories.map((cat) => cat.toString()),
       tags: dbData.tags || [],
       images: dbData.images?.map((image) => ({
-        ...image,
         id: image._id.toString(),
-        _id: undefined,
+        url: image.url,
+        alt: image.alt,
+        isPrimary: image.isPrimary ?? false,
       })),
       price: new PriceVO({
         amount: dbData.price.amount,
@@ -43,7 +44,7 @@ export class ProductFromPersistanceToEntityMapper {
         VariantProductFromPersistanceToEntity.fromPersistanceToEntity
       ),
       isFeatured: dbData.isFeatured || false,
-      status: new ProductStatus(dbData.status),
+      status: new EntityStatusVO(dbData.status),
       ratings: dbData.ratings,
       reviewsCount: dbData.reviewsCount,
       seo: dbData.seo ? SeoMetaVO.fromDto(dbData.seo) : undefined,

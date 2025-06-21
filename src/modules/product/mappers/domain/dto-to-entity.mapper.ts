@@ -5,21 +5,23 @@ import { DiscountVO } from "../../domain/value-objects/discount.value-object";
 import { PriceVO } from "../../domain/value-objects/price.value-object";
 import { SeoMetaVO } from "../../domain/value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "../../domain/value-objects/sku.value-object";
-import { ProductStatus } from "../../domain/value-objects/status.value-object";
+import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "../../domain/variant-product.entity";
 import { CreateProductType } from "../../schemas/create-product.schema";
-
 
 export class ProductDtoToEntityMapper {
   /*
     Map without id and variants, as id and variants will be proccesed inside the service.
+    Also hasVariants is calculated inside the entity.
+    Slug too.
+    Images is also mapped in the service as it needs to have an id generated
     */
   static mapToEntity(
     dto: CreateProductType
   ): Omit<ProductProps, "id" | "variants" | "hasVariants" | "slug" | "images"> {
     return {
       sku: new ProductSkuVO(dto.sku),
-      
+
       description: new ProductDescriptionVO(dto.description),
       shortDescription: dto.shortDescription
         ? new ShortProductDescriptionVO(dto.shortDescription)
@@ -40,12 +42,12 @@ export class ProductDtoToEntityMapper {
         : undefined,
 
       isFeatured: dto.isFeatured ?? false,
-      status: new ProductStatus(dto.status ?? "draft"),
+      status: EntityStatusVO.draft(),
       ratings: dto.ratings,
       reviewsCount: dto.reviewsCount,
       seo: dto.seo ? SeoMetaVO.fromDto(dto.seo) : undefined,
       attributes: dto.attributes,
-      name:dto.name
+      name: dto.name,
     };
   }
 }

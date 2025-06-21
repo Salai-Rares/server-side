@@ -6,6 +6,7 @@ import {
 } from "../schemas/inventory.dto";
 import { InventoryProps } from "./inventory.types";
 import { ChangeTracker } from "@/shared/services/change-tracker";
+import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 
 export class InventoryEntity implements InventoryProps {
   private changeTracker : ChangeTracker<InventoryEntity,UpdateableInventoryFieldsTypes> = new ChangeTracker()
@@ -17,6 +18,7 @@ export class InventoryEntity implements InventoryProps {
   private _updatedAt?: Date;
   private _referenceRootId: string;
   private _referenceVariantId?: string | undefined;
+  private _status: EntityStatusVO
   constructor(props: InventoryProps) {
     this._id = props.id;
     this._stock = props.stock;
@@ -26,6 +28,7 @@ export class InventoryEntity implements InventoryProps {
     this._updatedAt = props.updatedAt;
     this._referenceRootId = props.referenceRootId;
     this._referenceVariantId = props.referenceVariantId;
+    this._status = props.status
     this.validate();
   }
 
@@ -101,6 +104,9 @@ export class InventoryEntity implements InventoryProps {
   }
   public get updatedAt(): Date | undefined {
     return this._updatedAt;
+  }
+  public get status() : EntityStatusVO {
+    return this._status
   }
 
   public updateStock(stock: number) {

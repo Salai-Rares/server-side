@@ -8,7 +8,7 @@ import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "./value-objects/sku.value-object";
 import { SlugVO } from "./value-objects/slug.value-object";
-import { ProductStatus } from "./value-objects/status.value-object";
+import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "./variant-product.entity";
 
 export interface ProductProps{
@@ -26,7 +26,7 @@ export interface ProductProps{
     discount?:DiscountVO,
     variants?:ProductVariantEntity[],
     isFeatured?:boolean,
-    status:ProductStatus,
+    status:EntityStatusVO,
     ratings:RatingSummary,
     reviewsCount:number,
     seo?:SeoMetaVO,

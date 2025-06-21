@@ -4,6 +4,7 @@ import { IInventoryServiceRead } from "../types/read/inventory-read.service.type
 import { IInventoryRepositoryRead } from "../types";
 import { TYPES } from "@/shared/types";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
+import { ClientSession } from "mongoose";
 
 @injectable()
 export class InventoryReadUseCase implements IInventoryServiceRead {
@@ -11,13 +12,22 @@ export class InventoryReadUseCase implements IInventoryServiceRead {
     @inject(TYPES.InventoryRepositoryRead)
     private repo: IInventoryRepositoryRead
   ) {}
-  async findInventoryById(id: string): Promise<InventoryEntity> {
-    const inventory = await this.repo.findInventoryById(id);
+  async findInventoriesByProductsIds(ids: string[], options?: { session: ClientSession; }): Promise<InventoryEntity[]> {
+    const inventories = await this.repo.findInventoriesByProductsIds(ids,options)
+    return inventories;
+  }
+  async findInventoryById(id: string ,
+      options?: { session: ClientSession }): Promise<InventoryEntity> {
+    const inventory = await this.repo.findInventoryById(id,options);
     if (!inventory) {
-      throw ApiError.notFound(
-        `The inventory dosen't exist`
-      );
+      throw ApiError.notFound(`The inventory dosen't exist`);
     }
-    return inventory
+    return inventory;
+  }
+
+  async findInventoriesByProductId(id: string,
+    options?: { session: ClientSession }): Promise<InventoryEntity[]> {
+    const inventories = await this.repo.findInventoriesByProductId(id,options);
+    return inventories;
   }
 }

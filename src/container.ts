@@ -41,7 +41,7 @@ import { InventoryCreateUseCase } from "./modules/inventory/services/inventory-c
 import { ProductReadRepository } from "./modules/product/repositories/product-read.repository";
 import { IProductReadService } from "./modules/product/types/read/read-product.service.types";
 import { ProductReadUseCase } from "./modules/product/services/product-read.service";
-import { ProductUpdateUseCase } from "./modules/product/services/product-update.serivce";
+import { ProductUpdateUseCase } from "./modules/product/services/product-update.service";
 import { IProductUpdateService } from "./modules/product/types/update/product-update.service.types";
 import { IProductCreateService } from "./modules/product/types";
 import { IInventoryServiceUpdate } from "./modules/inventory/types/update/inventory-update.service.types";

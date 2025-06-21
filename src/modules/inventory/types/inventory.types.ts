@@ -1,3 +1,4 @@
+import { EntityStatusType } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { Types, Document } from "mongoose";
 
 export interface IInventoryBase {
@@ -6,6 +7,7 @@ export interface IInventoryBase {
   stock: number;
   inStock: boolean;
   warehouseLocation?: string;
+  status: EntityStatusType;
   createdAt: Date;
   updatedAt: Date;
 }

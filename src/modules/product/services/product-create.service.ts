@@ -63,15 +63,14 @@ export class ProductCreateUseCase implements IProductCreateService {
 
         //2. Process root images
         let images: ImageVO[] | undefined;
-        if (images && images.length > 0) {
-          images = dto.images?.map((image) => {
-            const id = newHexStringId();
-            return {
-              id,
-              ...image,
-            };
-          });
-        }
+
+        images = dto.images?.map((image) => {
+          const id = newHexStringId();
+          return {
+            id,
+            ...image,
+          };
+        });
 
         // 2. Process variants and prepare inventory requests
         let variants: ProductVariantEntity[] | undefined;

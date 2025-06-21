@@ -5,7 +5,7 @@ import { IProductRepositoryRead } from "../types/read/product-read.repository.ty
 import { ProductFromPersistanceToEntityMapper } from "../mappers/domain/db-to-entity.mapper";
 import { ClientSession } from "mongoose";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
-import { IProductDocument } from "../types";
+import { IProductDocument, IProductLean } from "../types";
 
 export class ProductReadRepository implements IProductRepositoryRead {
   async findProductsByIds(
@@ -20,9 +20,9 @@ export class ProductReadRepository implements IProductRepositoryRead {
     }
     const products = await Product.find({ _id: { $in: ids } }, null, {
       session: options?.session,
-    });
+    }).lean();
 
-    return products.map((product: IProductDocument) =>
+    return products.map((product: IProductLean) =>
       ProductFromPersistanceToEntityMapper.fromPersistanceToEntity(product)
     );
   }
@@ -30,9 +30,9 @@ export class ProductReadRepository implements IProductRepositoryRead {
     id: string,
     options?: { session: ClientSession }
   ): Promise<ProductEntity | null> {
-    const product = await Product.findById(toObjectId(id), null, {
+    const product: IProductLean = await Product.findById(toObjectId(id), null, {
       session: options?.session,
-    });
+    }).lean();
 
     return product
       ? ProductFromPersistanceToEntityMapper.fromPersistanceToEntity(product)
