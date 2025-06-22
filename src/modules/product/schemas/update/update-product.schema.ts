@@ -5,15 +5,15 @@ import {
   UpdateInventoryByIDSchema,
 } from "@/modules/inventory/schemas/inventory.dto";
 import { isValidObjectId } from "@/shared/utils";
-import { PRODUCT_LIMITS } from "../constants/product-validation.constants";
+import { PRODUCT_LIMITS } from "../../constants/product-validation.constants";
 import {
   PriceSchema,
   DiscountSchema,
   SeoMetaSchema,
-  ProductImageSchema,
   AttributeSchema,
   VariantBaseSchema,
-} from "./shared.schema";
+} from "../shared.schema";
+import { VariantCreateCommandSchema } from "./update-product.command.schema";
 
 // ===============================
 // UPDATE PARTIALS
@@ -45,7 +45,7 @@ const VariantCreateSchema = VariantBaseSchema.extend({
 }).strip();
 
 // For updating existing variants (ID required)
-const VariantUpdateSchema = z
+export const VariantUpdateSchema = z
   .object({
     id: z.string(),
     productOptions: z.record(z.string()).optional(),

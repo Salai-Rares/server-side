@@ -20,6 +20,7 @@ import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { ILogger } from "@/core/logger/logger.interface";
 import { CreateProductType, UpdateProductRequestType } from "../schemas";
 import { IProductUpdateService } from "../types/update/product-update.service.types";
+import { ProductUpdateCommand } from "./commands/product-update.command";
 @injectable()
 export class ProductUpdateUseCase implements IProductUpdateService {
   constructor(
@@ -29,7 +30,7 @@ export class ProductUpdateUseCase implements IProductUpdateService {
     private inventoryRepository: IInventoryRepositoryWrite,
     @inject(TYPES.Logger) private logger: ILogger
   ) {}
-  updateProductWithInventories(productId: string, updates: { dto: UpdateProductRequestType; files?: Express.Multer.File[]; }): Promise<{ product: ProductEntity; inventories?: InventoryEntity[]; }> {
+  updateProductWithInventories(product : ProductUpdateCommand) : Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }>{
     
     
     throw new Error("Method not implemented.");

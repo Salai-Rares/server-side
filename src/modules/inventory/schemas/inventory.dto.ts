@@ -31,7 +31,7 @@ export const InventoryOperationSchema = z
   });
 
 
-export type InventoryDto = z.infer<typeof InventorySchema>;
+export type InventoryCreateType = z.infer<typeof InventorySchema>;
 export type UpdateInventoryType = z.infer<typeof UpdateInventoryByIDSchema>;
 export type UpdateableInventoryType = z.infer<typeof UpdateableInventorySchema>;
 export type UpdateableInventoryFieldsTypes = keyof z.infer<

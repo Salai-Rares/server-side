@@ -1,7 +1,7 @@
 import { ClientSession } from "mongoose";
 import { InventoryEntity } from "../../domain/inventory.entity";
 import { CreateInventoryType } from "../../schemas/create-inventory.dto";
-import { InventoryDto } from "../../schemas/inventory.dto";
+import { InventoryCreateType } from "../../schemas/inventory.dto";
 
 export interface IInventoryServiceCreate {
   saveInventory(

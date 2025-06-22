@@ -38,6 +38,8 @@ import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { ProductEntityToResponseDtoMapper } from "../mappers/domain/entity-to-response.mapper";
 import { InventoryEntityToResponseDtoMapper } from "@/modules/inventory/mappers/domain/entity-to-dto.mapper";
 import { ProductCreateInputAssembler } from "./assemblers/product-create-input.assembler";
+import { ProductUpdateCommand } from "../services/commands/product-update.command";
+import { ProductUpdateInputAssembler } from "./assemblers/product-update-input.assembler";
 const productsImageUpload = createMulterUpload({
   destination: path.resolve(__dirname, "../../../images/products"),
   mimetypes: {
@@ -65,7 +67,6 @@ export class ProductController extends BaseHttpController {
 
   @httpPost("/create", productsImageUpload.raw(), cleanupUploadedFiles)
   async createProduct(req: ProcessedRequest, res: Response): Promise<void> {
-    
     const dto = ProductCreateInputAssembler.assemble(
       req.body,
       req.files as Express.Multer.File[]
@@ -103,8 +104,16 @@ export class ProductController extends BaseHttpController {
       );
     }
     //  const {product, inventories} = await this.productUpdateUseCase.updateProductWithInventories(productId,{dto,files})
-
-    res.status(200).json({ status: "success", data: dto });
+    const assembledResult: ProductUpdateCommand =
+      ProductUpdateInputAssembler.assemble(
+        productId,
+        dto,
+        req?.files as Express.Multer.File[]
+      );
+    res.status(200).json({
+      status: "success",
+      data: { dtoRequest: dto, assembledResult: assembledResult },
+    });
     return;
   }
 

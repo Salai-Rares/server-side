@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UpdateProductRequestSchema } from "@/modules/product/schemas/update-product.schema";
+import { UpdateProductRequestSchema } from "@/modules/product/schemas/update/update-product.schema";
 
 // ===================
 // UNIT TESTS FOR SCHEMA
