@@ -110,9 +110,11 @@ export class ProductController extends BaseHttpController {
         dto,
         req?.files as Express.Multer.File[]
       );
+
+      const {product,inventories} = await this.productUpdateUseCase.updateProductWithInventories(assembledResult)
     res.status(200).json({
       status: "success",
-      data: { dtoRequest: dto, assembledResult: assembledResult },
+      data: { dto,assembledResult ,product},
     });
     return;
   }

@@ -14,4 +14,9 @@ export interface IInventoryRepositoryRead {
     ids: string[],
     options?: { session: ClientSession }
   ): Promise<InventoryEntity[]>;
+  findInventoryByReferences(
+  referenceRootId: string,
+  referenceVariantId?: string,
+  options?: { session: ClientSession }
+): Promise<InventoryEntity | null> 
 }

@@ -26,11 +26,15 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
     inventory: CreateInventoryType,
     options?: { session: ClientSession }
   ): Promise<InventoryEntity> {
-    const product: ProductEntity =
+    const product: ProductEntity | null =
       await this.productReadService.findProductById(
         inventory.referenceRootId,
         options
       );
+
+    if (!product) {
+      throw ApiError.notFound("Requested product does not exist", inventory.referenceRootId);
+    }
     if (inventory.referenceVariantId) {
       const variantExists = product.variants?.some(
         (variant) => variant.id === inventory.referenceVariantId

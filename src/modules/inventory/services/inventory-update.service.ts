@@ -27,9 +27,12 @@ export class InventoryUpdateUseCase implements IInventoryServiceUpdate {
         "id_format"
       );
     }
-    const inventory: InventoryEntity = await this.readService.findInventoryById(
+    const inventory: InventoryEntity | null = await this.readService.findInventoryById(
       inventoryId
     );
+    if (!inventory) {
+      throw ApiError.notFound(`The inventory dosen't exist`);
+    }
     inventory.updateInventory(updateData);
     const updatedInventory = await this.inventoryUpdateRepo.updateInventory(
       inventory,

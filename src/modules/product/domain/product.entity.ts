@@ -21,6 +21,7 @@ import {
 import { newHexStringId } from "@/shared/utils";
 import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
 import { ImageVO } from "./value-objects/image.value-object";
+import slugify from "slugify";
 
 export class ProductEntity implements ProductProps {
   private readonly _id: string;
@@ -179,6 +180,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._name = newName.trim();
+    this._slug = SlugVO.fromName(this._name)
   }
 
   updateDescription(newDescription: string): void {
@@ -502,6 +504,49 @@ export class ProductEntity implements ProductProps {
     }
     this._attributes = undefined;
   }
+
+  removeImages(imageIds:string[]){
+    this._images = this.images?.filter((image)=>!imageIds.includes(image.id))
+  }
+
+  addImage(image:ImageVO){
+    this._images?.push(image)
+  }
+  reorderImages(order: string[]): void {
+  if (!this._images) return;
+
+  const imageMap = new Map(this._images.map((img) => [img.id, img]));
+  const reordered: ImageVO[] = [];
+
+  for (const id of order) {
+    const img = imageMap.get(id);
+    if (!img) {
+      throw ValidationError.domainRule(
+        "images",
+        "invalid_reorder_id",
+        `Cannot reorder images — image ID not found: ${id}`,
+        { id, productId: this._id }
+      );
+    }
+    reordered.push(img);
+  }
+
+  if (reordered.length !== this._images.length) {
+    throw ValidationError.domainRule(
+      "images",
+      "incomplete_reorder",
+      `Order must include all images. Received ${reordered.length}, expected ${this._images.length}`,
+      { orderLength: order.length, imageCount: this._images.length }
+    );
+  }
+
+  // Set primary: only first image
+  for (let i = 0; i < reordered.length; i++) {
+    reordered[i].isPrimary = i === 0;
+  }
+
+  this._images = reordered;
+}
 
   updateMultiple(updates: ProductDomainUpdateType): void {
     if (updates.name !== undefined) {

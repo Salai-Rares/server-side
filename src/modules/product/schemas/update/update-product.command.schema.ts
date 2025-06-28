@@ -15,7 +15,7 @@ export const VariantCreateCommandSchema = VariantBaseSchema.extend({
 export const ImageOperationsCommandSchema = z
   .object({
     add: z.array(ProductImageCommandSchema).optional(),
-    delete: z.array(z.string()).optional(), // publicIds to delete
+    remove: z.array(z.string()).optional(), // publicIds to delete
     order: z.array(z.string()).optional(), // tempIds + publicIds in final order
   })
   .strip();

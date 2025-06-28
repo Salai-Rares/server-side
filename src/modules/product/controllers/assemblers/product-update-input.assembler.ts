@@ -33,7 +33,7 @@ export class ProductUpdateInputAssembler {
     const resolvedImageOperations = dto.imageOperations
       ? {
           add: resolveImages(dto.imageOperations.add),
-          delete: dto.imageOperations.delete,
+          remove: dto.imageOperations.remove,
           order: dto.imageOperations.order,
         }
       : undefined;

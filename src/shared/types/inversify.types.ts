@@ -35,4 +35,6 @@ export const TYPES = {
   InventoryRepositoryRead: Symbol.for("InventoryRepositoryRead"),
   InventoryReadUseCase: Symbol.for("InventoryReadUseCase"),
   InventoryRepositoryUpdate: Symbol.for("InventoryRepositoryUpdate"),
+  InventoryRepositoryDelete:Symbol.for("InventoryRepositoryDelete"),
+  InventoryDeleteUseCase: Symbol.for("InventoryDeleteUseCase")
 };

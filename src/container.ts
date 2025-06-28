@@ -50,6 +50,10 @@ import { InventoryRepositoryRead } from "./modules/inventory/repositories/invent
 import { InventoryReadUseCase } from "./modules/inventory/services/inventory-read.service";
 import { IInventoryRepositoryUpdate } from "./modules/inventory/types/update/inventory-update.repository.types";
 import { InventoryRepositoryUpdate } from "./modules/inventory/repositories/inventory-update.repository";
+import { IInventoryRepositoryDelete } from "./modules/inventory/types/delete/inventory-delete.repository.types";
+import { InventoryRepositoryDelete } from "./modules/inventory/repositories/inventory-delete.repository";
+import { IInventoryServiceDelete } from "./modules/inventory/types/delete/inventory-delete.service.types";
+import { InventoryDeleteUseCase } from "./modules/inventory/services/inventory-delete.service";
 
 // Create Inversify Container
 const container = new Container();
@@ -139,4 +143,6 @@ container
   container.bind<IInventoryRepositoryRead>(TYPES.InventoryRepositoryRead).to(InventoryRepositoryRead).inSingletonScope();
   container.bind<IInventoryServiceRead>(TYPES.InventoryReadUseCase).to(InventoryReadUseCase).inSingletonScope()
   container.bind<IInventoryRepositoryUpdate>(TYPES.InventoryRepositoryUpdate).to(InventoryRepositoryUpdate).inSingletonScope();
+  container.bind<IInventoryRepositoryDelete>(TYPES.InventoryRepositoryDelete).to(InventoryRepositoryDelete).inSingletonScope();
+  container.bind<IInventoryServiceDelete>(TYPES.InventoryDeleteUseCase).to(InventoryDeleteUseCase).inSingletonScope();
 export { container };

@@ -19,14 +19,12 @@ export class ProductReadUseCase implements IProductReadService {
   async findProductById(
     id: string,
     options?: { session: ClientSession }
-  ): Promise<ProductEntity> {
+  ): Promise<ProductEntity | null> {
     const product = await this.productReadRepository.findProductById(
       id,
       options
     );
-    if (!product) {
-      throw ApiError.notFound("Requested product does not exist", id);
-    }
+   
     return product;
   }
 

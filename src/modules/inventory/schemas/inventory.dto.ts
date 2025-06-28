@@ -1,3 +1,4 @@
+import { PRODUCT_LIMITS } from "@/modules/product/constants/product-validation.constants";
 import { boolean, z } from "zod";
 
 export const InventorySchema = z
@@ -13,21 +14,22 @@ export const UpdateInventoryByIDSchema = UpdateableInventorySchema.extend({
 
 const updatableKeysSchema = UpdateableInventorySchema.extend({
   inStock: z.boolean(),
+  status:z.enum(PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES)
 });
 
 export const InventoryOperationSchema = z
   .object({
     create: InventorySchema.optional(),
     update: UpdateInventoryByIDSchema.optional(),
-    delete: z.string().optional(), // inventory id
+    remove: z.string().optional(), // inventory id
   })
   .refine((data) => {
-    const keys = ["create", "update", "delete"].filter(
+    const keys = ["create", "update", "remove"].filter(
       (k) => data[k as keyof typeof data] !== undefined
     );
     return keys.length === 1;
   }, {
-    message: "Exactly one of create, update, or delete must be provided.",
+    message: "Exactly one of create, update, or remove must be provided.",
   });
 
 

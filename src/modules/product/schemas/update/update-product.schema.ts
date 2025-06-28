@@ -30,7 +30,7 @@ export const TempImageRefSchema = z.object({
 const ImageOperationsSchema = z
   .object({
     add: z.array(TempImageRefSchema).optional(),
-    delete: z.array(z.string()).optional(), // publicIds to delete
+    remove: z.array(z.string()).optional(), // publicIds to delete
     order: z.array(z.string()).optional(), // tempIds + publicIds in final order
   })
   .strip();

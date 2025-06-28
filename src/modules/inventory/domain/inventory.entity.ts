@@ -7,9 +7,13 @@ import {
 import { InventoryProps } from "./inventory.types";
 import { ChangeTracker } from "@/shared/services/change-tracker";
 import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { ApiError } from "@/shared/errors/api-error/ApiError";
 
 export class InventoryEntity implements InventoryProps {
-  private changeTracker : ChangeTracker<InventoryEntity,UpdateableInventoryFieldsTypes> = new ChangeTracker()
+  private changeTracker: ChangeTracker<
+    InventoryEntity,
+    UpdateableInventoryFieldsTypes
+  > = new ChangeTracker();
   private readonly _id: string;
   private _stock: number; // Mutable
   private _inStock: boolean;
@@ -18,7 +22,7 @@ export class InventoryEntity implements InventoryProps {
   private _updatedAt?: Date;
   private _referenceRootId: string;
   private _referenceVariantId?: string | undefined;
-  private _status: EntityStatusVO
+  private _status: EntityStatusVO;
   constructor(props: InventoryProps) {
     this._id = props.id;
     this._stock = props.stock;
@@ -28,7 +32,7 @@ export class InventoryEntity implements InventoryProps {
     this._updatedAt = props.updatedAt;
     this._referenceRootId = props.referenceRootId;
     this._referenceVariantId = props.referenceVariantId;
-    this._status = props.status
+    this._status = props.status;
     this.validate();
   }
 
@@ -105,8 +109,8 @@ export class InventoryEntity implements InventoryProps {
   public get updatedAt(): Date | undefined {
     return this._updatedAt;
   }
-  public get status() : EntityStatusVO {
-    return this._status
+  public get status(): EntityStatusVO {
+    return this._status;
   }
 
   public updateStock(stock: number) {
@@ -120,19 +124,18 @@ export class InventoryEntity implements InventoryProps {
     }
     this._stock = stock;
     this._inStock = this._stock > 0;
-    this.changeTracker.mark("stock")
-    this.changeTracker.mark("inStock")
+    this.changeTracker.mark("stock");
+    this.changeTracker.mark("inStock");
   }
 
   public updateWarehouseLocation(warehouseLocation: string) {
     this._warehouseLocation = warehouseLocation;
-    this.changeTracker.mark("warehouseLocation")
-    
+    this.changeTracker.mark("warehouseLocation");
   }
 
   public clearWarehouseLocation() {
     this._warehouseLocation = undefined;
-    this.changeTracker.mark("warehouseLocation")
+    this.changeTracker.mark("warehouseLocation");
   }
 
   public updateInventory(data: UpdateableInventoryType) {
@@ -149,6 +152,25 @@ export class InventoryEntity implements InventoryProps {
   }
 
   public toUpdateObject() {
-    return this.changeTracker.toUpdate(this)
+    if (!this.changeTracker.hasChanges()) {
+      throw ApiError.badRequest(
+        "You called update method but no changes were done"
+      );
+    }
+    return this.changeTracker.toUpdate(this);
+  }
+
+  public markAsDeleted(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "status",
+        "already_deleted",
+        "Inventory is already marked as deleted",
+        this._id
+      );
+    }
+
+    this._status = this._status.remove();
+    this.changeTracker.mark("status");
   }
 }

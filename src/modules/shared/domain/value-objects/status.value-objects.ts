@@ -10,7 +10,7 @@ export class EntityStatusVO {
       draft: ["active"],
       active: ["archived", "deleted"],
       archived: ["active"],
-      deleted: [], // terminal state
+      deleted: ["draft"], // terminal state
     };
 
   // Define valid statuses for validation
@@ -134,7 +134,7 @@ export class EntityStatusVO {
     return this.transitionTo("archived");
   }
 
-  delete(): EntityStatusVO {
+  remove(): EntityStatusVO {
     return this.transitionTo("deleted");
   }
 
