@@ -1,6 +1,24 @@
-import { ClientSession } from "mongoose"
+import { ClientSession } from "mongoose";
 
-export interface IInventoryRepositoryDelete{
-    deleteInventoryPermanentByReference(referenceRootId:string,referenceVariantId?:string, options?: { session: ClientSession }):Promise<number>
-    deleteInventoryPermanentById(id:string,productId:string ,options?: { session: ClientSession }):Promise<number>
+export interface IInventoryRepositoryDelete {
+  deleteInventoryPermanentByReference(
+    referenceRootId: string,
+    referenceVariantId?: string,
+    options?: { session?: ClientSession }
+  ): Promise<number>;
+  deleteInventoryPermanentById(
+    id: string,
+    productId: string,
+    options?: { session?: ClientSession }
+  ): Promise<number>;
+  deleteManyInventoriesPermById(
+    ids: string[],
+    productId: string,
+    options?: { session?: ClientSession }
+  ): Promise<number>;
+  deleteManyVariantInventoriesPermanent(
+    referenceRootId:string,
+    referenceVariantId:string[],
+    options?:{session?:ClientSession}
+  ):Promise<number>
 }

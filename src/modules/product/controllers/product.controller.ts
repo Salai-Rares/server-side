@@ -40,6 +40,7 @@ import { InventoryEntityToResponseDtoMapper } from "@/modules/inventory/mappers/
 import { ProductCreateInputAssembler } from "./assemblers/product-create-input.assembler";
 import { ProductUpdateCommand } from "../services/commands/product-update.command";
 import { ProductUpdateInputAssembler } from "./assemblers/product-update-input.assembler";
+import { ZodError } from "zod";
 const productsImageUpload = createMulterUpload({
   destination: path.resolve(__dirname, "../../../images/products"),
   mimetypes: {
@@ -65,6 +66,10 @@ export class ProductController extends BaseHttpController {
     super();
   }
 
+  @httpGet("/")
+  async getProducts(req:Request,res:Response){
+    res.status(200).json({status:"success"})
+  }
   @httpPost("/create", productsImageUpload.raw(), cleanupUploadedFiles)
   async createProduct(req: ProcessedRequest, res: Response): Promise<void> {
     const dto = ProductCreateInputAssembler.assemble(
@@ -90,7 +95,10 @@ export class ProductController extends BaseHttpController {
     next: NextFunction
   ): Promise<void> {
     const productId = req.params.id;
-    const dto = UpdateProductRequestSchema.parse(req.body);
+  
+const dto = UpdateProductRequestSchema.parse(req.body);
+   
+    
     const files = req.files as Express.Multer.File[];
     const uploadedMapSize = Object.keys(dto.uploadedMap || {}).length;
     const fileCount = files?.length ?? 0;
@@ -114,7 +122,7 @@ export class ProductController extends BaseHttpController {
       const {product,inventories} = await this.productUpdateUseCase.updateProductWithInventories(assembledResult)
     res.status(200).json({
       status: "success",
-      data: { dto,assembledResult ,product},
+      data: { product},
     });
     return;
   }

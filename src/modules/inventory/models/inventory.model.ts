@@ -30,6 +30,8 @@ InventorySchema.index(
   { unique: true, sparse: true }
 );
 
+InventorySchema.index({ referenceRootId: 1 });
+
 const Inventory: Model<IInventoryDocument> = mongoose.model<IInventoryDocument>(
   "Inventory",
   InventorySchema

@@ -17,6 +17,20 @@ export class InventoryDeleteUseCase implements IInventoryServiceDelete {
     @inject(TYPES.InventoryRepositoryDelete)
     private inventoryDeleteRepo: IInventoryRepositoryDelete
   ) {}
+ async deleteManyVariantInventoriesPermanent(referenceRootId: string, referenceVariantIds: string[], options?: { session?: ClientSession; }): Promise<void> {
+    const deletedCount = await this.inventoryDeleteRepo.deleteManyVariantInventoriesPermanent(referenceRootId,referenceVariantIds,options)
+     if (deletedCount !== referenceVariantIds.length)
+      throw ApiError.notFound(
+        `Some inventories could not be deleted, operation aborted`
+      );
+  }
+ async deleteManyInventoriesPermById(ids: string[], productId: string, options?: { session: ClientSession; }): Promise<void> {
+    const deletedCount = await this.inventoryDeleteRepo.deleteManyInventoriesPermById(ids,productId,options)
+     if (deletedCount !== ids.length)
+      throw ApiError.notFound(
+        `Some inventories could not be deleted, operation aborted`
+      );
+  }
   async deleteInventoryPermanentById(
     id: string,
     productId: string,
@@ -25,7 +39,8 @@ export class InventoryDeleteUseCase implements IInventoryServiceDelete {
     const deletedCount =
       await this.inventoryDeleteRepo.deleteInventoryPermanentById(
         id,
-        productId
+        productId,
+        options
       );
     if (deletedCount === 0)
       throw ApiError.notFound(
@@ -40,7 +55,8 @@ export class InventoryDeleteUseCase implements IInventoryServiceDelete {
   ) {
     const inventory = await this.inventoryReadService.findInventoryByReferences(
       referenceRootId,
-      referenceVariantId
+      referenceVariantId,
+      options
     );
     if (!inventory) {
       throw ApiError.badRequest("Inventory not found for deletion.");
@@ -53,12 +69,13 @@ export class InventoryDeleteUseCase implements IInventoryServiceDelete {
   async deleteInventoryPermanentByReference(
     referenceRootId: string,
     referenceVariantId?: string,
-     options?: { session: ClientSession }
+     options?: { session?: ClientSession }
   ) {
     const deletedCount =
       await this.inventoryDeleteRepo.deleteInventoryPermanentByReference(
         referenceRootId,
-        referenceVariantId
+        referenceVariantId,
+        options
       );
     if (deletedCount === 0) {
       throw ApiError.notFound(

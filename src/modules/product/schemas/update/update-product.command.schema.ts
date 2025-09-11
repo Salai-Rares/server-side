@@ -10,7 +10,7 @@ export const ProductImageCommandSchema = ProductImageSchema.extend({
 
 export const VariantCreateCommandSchema = VariantBaseSchema.extend({
   inventory: InventorySchema.optional(),
-  images: z.array(ProductImageCommandSchema).optional(),
+  images: z.array(ProductImageSchema).optional(),
 });
 export const ImageOperationsCommandSchema = z
   .object({

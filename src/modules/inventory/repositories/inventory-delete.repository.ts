@@ -8,6 +8,42 @@ import { IInventoryBase } from "../types";
 import { ClientSession, Types } from "mongoose";
 @injectable()
 export class InventoryRepositoryDelete implements IInventoryRepositoryDelete {
+  async deleteManyVariantInventoriesPermanent(
+    referenceRootId: string,
+    referenceVariantIds: string[],
+    options?: { session?: ClientSession }
+  ): Promise<number> {
+    const mongoRootId = toObjectId(referenceRootId);
+    const mongoVariantIds = referenceVariantIds.map(toObjectId);
+
+    const result: DeleteResult = await Inventory.deleteMany(
+      {
+        referenceRootId: mongoRootId,
+        referenceVariantId: { $in: mongoVariantIds },
+      },
+      { session: options?.session }
+    );
+
+    return result.deletedCount ?? 0;
+  }
+  async deleteManyInventoriesPermById(
+    ids: string[],
+    productId: string,
+    options?: { session: ClientSession }
+  ): Promise<number> {
+    const objectIds = ids.map(toObjectId);
+    const productMongoId = toObjectId(productId);
+
+    const result: DeleteResult = await Inventory.deleteMany(
+      {
+        _id: { $in: objectIds },
+        referenceRootId: productMongoId,
+      },
+      { session: options?.session }
+    );
+
+    return result.deletedCount ?? 0;
+  }
   async deleteInventoryPermanentById(
     id: string,
     productId: string,
@@ -21,13 +57,15 @@ export class InventoryRepositoryDelete implements IInventoryRepositoryDelete {
     const productMongoId = toObjectId(productId);
     deleteQuery.referenceRootId = productMongoId;
 
-    const result: DeleteResult = await Inventory.deleteOne(deleteQuery,{session:options?.session});
+    const result: DeleteResult = await Inventory.deleteOne(deleteQuery, {
+      session: options?.session,
+    });
     return result.deletedCount ?? 0;
   }
   async deleteInventoryPermanentByReference(
     referenceRootId: string,
     referenceVariantId?: string,
-    options?: { session: ClientSession }
+    options?: { session?: ClientSession }
   ): Promise<number> {
     const mongoRefRootId = toObjectId(referenceRootId);
     const deleteQuery: Pick<
@@ -38,7 +76,9 @@ export class InventoryRepositoryDelete implements IInventoryRepositoryDelete {
       const mongoRefVarId = toObjectId(referenceVariantId);
       deleteQuery["referenceVariantId"] = mongoRefVarId;
     }
-    const result: DeleteResult = await Inventory.deleteOne(deleteQuery,{session:options?.session});
+    const result: DeleteResult = await Inventory.deleteOne(deleteQuery, {
+      session: options?.session,
+    });
     return result.deletedCount ?? 0;
   }
 }

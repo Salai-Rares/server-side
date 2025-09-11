@@ -1,13 +1,17 @@
 import { ValidationError } from "@/shared/errors/ValidationError";
-import {
-  UpdateableInventoryFieldsTypes,
-  UpdateableInventoryType,
-  UpdateInventoryType,
-} from "../schemas/inventory.dto";
+import { UpdateableInventoryType } from "../schemas/inventory.dto";
 import { InventoryProps } from "./inventory.types";
 import { ChangeTracker } from "@/shared/services/change-tracker";
 import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
+import { DataKeys } from "@/shared/types/data-keys-entities.types";
+
+type ReadonlyFields = "id" | "createdAt" | "updatedAt";
+
+type UpdateableInventoryFieldsTypes = Exclude<
+  DataKeys<InventoryEntity>,
+  ReadonlyFields
+>;
 
 export class InventoryEntity implements InventoryProps {
   private changeTracker: ChangeTracker<
@@ -18,8 +22,8 @@ export class InventoryEntity implements InventoryProps {
   private _stock: number; // Mutable
   private _inStock: boolean;
   private _warehouseLocation?: string;
-  private _createdAt?: Date;
-  private _updatedAt?: Date;
+  private readonly _createdAt?: Date;
+  private readonly _updatedAt?: Date;
   private _referenceRootId: string;
   private _referenceVariantId?: string | undefined;
   private _status: EntityStatusVO;

@@ -47,7 +47,7 @@ export class InventoryRepositoryRead implements IInventoryRepositoryRead {
       { referenceRootId: mongoId },
       null,
       options?.session
-    );
+    )
     return inventories.map((inventory: IInventoryDocument) =>
       InventoryPersistanceToEntityMapper.inventoryModelToEntity(inventory)
     );

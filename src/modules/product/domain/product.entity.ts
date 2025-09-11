@@ -16,23 +16,34 @@ import {
   UpdateDiscountType,
   UpdatePriceType,
   UpdateSeoMetaType,
-
+  VariantUpdateType,
 } from "../schemas";
 import { newHexStringId } from "@/shared/utils";
 import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
 import { ImageVO } from "./value-objects/image.value-object";
 import slugify from "slugify";
+import { ChangeTracker } from "@/shared/services/change-tracker";
+import { DataKeys } from "@/shared/types/data-keys-entities.types";
+import { ApiError } from "@/shared/errors/api-error/ApiError";
+type ReadonlyFields = "id" | "sku" | "createdAt" | "updatedAt";
+
+export type UpdateableProductFields = Exclude<
+  DataKeys<ProductEntity>,
+  ReadonlyFields
+>;
 
 export class ProductEntity implements ProductProps {
+  private changeTracker: ChangeTracker<ProductEntity, UpdateableProductFields> =
+    new ChangeTracker();
   private readonly _id: string;
   private readonly _sku: ProductSkuVO;
-  private _description: ProductDescriptionVO;
+  private _description?: ProductDescriptionVO;
   private _shortDescription?: ShortProductDescriptionVO;
   private _brand?: string;
-  private _categories: string[];
+  private _categories?: string[];
   private _tags?: string[];
   private _images?: ImageVO[];
-  private _price: PriceVO;
+  private _price?: PriceVO;
   private _discount?: DiscountVO;
   private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
@@ -105,7 +116,7 @@ export class ProductEntity implements ProductProps {
   get sku(): ProductSkuVO {
     return this._sku;
   }
-  get description(): ProductDescriptionVO {
+  get description(): ProductDescriptionVO | undefined {
     return this._description;
   }
   get shortDescription(): ShortProductDescriptionVO | undefined {
@@ -114,8 +125,8 @@ export class ProductEntity implements ProductProps {
   get brand(): string | undefined {
     return this._brand;
   }
-  get categories(): string[] {
-    return [...this._categories];
+  get categories(): string[] | undefined {
+    return this._categories ? [...this._categories] : undefined;
   } // Return copy
   get tags(): string[] | undefined {
     return this._tags ? [...this._tags] : undefined;
@@ -123,7 +134,7 @@ export class ProductEntity implements ProductProps {
   get images(): ImageVO[] | undefined {
     return this._images ? [...this._images] : undefined;
   }
-  get price(): PriceVO {
+  get price(): PriceVO | undefined {
     return this._price;
   }
   get discount(): DiscountVO | undefined {
@@ -144,9 +155,7 @@ export class ProductEntity implements ProductProps {
   get ratings(): RatingSummary {
     return { ...this._ratings };
   }
-  get reviewCount(): number {
-    return this._reviewsCount;
-  }
+
   get seo(): SeoMetaVO | undefined {
     return this._seo;
   }
@@ -180,7 +189,9 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._name = newName.trim();
-    this._slug = SlugVO.fromName(this._name)
+    this._slug = SlugVO.fromName(this._name);
+    this.changeTracker.mark("name");
+    this.changeTracker.mark("slug");
   }
 
   updateDescription(newDescription: string): void {
@@ -193,6 +204,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._description = new ProductDescriptionVO(newDescription);
+    this.changeTracker.mark("description");
   }
   updateShortDescription(newShortDescription: string): void {
     if (this._status.isDeleted()) {
@@ -205,6 +217,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._shortDescription = new ShortProductDescriptionVO(newShortDescription);
+    this.changeTracker.mark("shortDescription");
   }
   clearShortDescription(): void {
     if (this._status.isDeleted()) {
@@ -217,6 +230,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._shortDescription = undefined;
+    this.changeTracker.mark("shortDescription");
   }
 
   updateBrand(newBrand: string): void {
@@ -230,6 +244,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._brand = newBrand;
+    this.changeTracker.mark("brand");
   }
 
   clearBrand(): void {
@@ -243,6 +258,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._brand = undefined;
+    this.changeTracker.mark("brand");
   }
 
   updateCategories(newCategories: string[]): void {
@@ -255,6 +271,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._categories = [...newCategories];
+    this.changeTracker.mark("categories");
   }
 
   updateTags(newTags: string[]): void {
@@ -269,6 +286,7 @@ export class ProductEntity implements ProductProps {
 
     // Zod already validated and processed the tags array
     this._tags = newTags;
+    this.changeTracker.mark("tags");
   }
 
   clearTags(): void {
@@ -282,18 +300,9 @@ export class ProductEntity implements ProductProps {
     }
 
     this._tags = undefined;
+    this.changeTracker.mark("tags");
   }
-  updateImages(newImages: []): void {
-    if (this._status.isDeleted()) {
-      throw ValidationError.domainRule(
-        "images",
-        "immutable_when_deleted",
-        "Cannot update images of deleted product",
-        this._id
-      );
-    }
-    this._images = [...newImages];
-  }
+
   updatePrice(priceUpdate: UpdatePriceType): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -303,7 +312,24 @@ export class ProductEntity implements ProductProps {
         this._id
       );
     }
-
+    if (!this._price) {
+      // If no price exists, we need both amount + currency to set a new one
+      if (priceUpdate.amount === undefined || !priceUpdate.currency) {
+        throw ValidationError.domainRule(
+          "price",
+          "missing_required_fields",
+          "Both amount and currency are required to set initial price",
+          { productId: this._id }
+        );
+      }
+      this._price = new PriceVO({
+        amount: priceUpdate.amount,
+        currency: priceUpdate.currency,
+      });
+      this.changeTracker.mark("price");
+      return;
+    }
+    // Otherwise, merge with existing price
     // Use current values if not provided
     const newAmount = priceUpdate.amount ?? this._price.amount;
     const newCurrency = priceUpdate.currency ?? this._price.currency;
@@ -331,6 +357,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._price = newPrice;
+    this.changeTracker.mark("price");
   }
 
   updateDiscount(discountUpdate: UpdateDiscountType): void {
@@ -342,7 +369,14 @@ export class ProductEntity implements ProductProps {
         this._id
       );
     }
-
+    if (!this._price) {
+      throw ValidationError.domainRule(
+        "discount",
+        "missing_price",
+        "Cannot apply discount without a price",
+        this._id
+      );
+    }
     // Use current values if not provided (for partial updates)
     const newType = discountUpdate.type ?? this._discount?.type;
     const newValue = discountUpdate.value ?? this._discount?.value;
@@ -380,6 +414,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._discount = newDiscount;
+    this.changeTracker.mark("discount");
   }
 
   clearDiscount(): void {
@@ -393,6 +428,7 @@ export class ProductEntity implements ProductProps {
     }
 
     this._discount = undefined;
+    this.changeTracker.mark("discount");
   }
   updateFeatured(isFeatured: boolean): void {
     if (this._status.isDeleted()) {
@@ -404,6 +440,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._isFeatured = isFeatured;
+    this.changeTracker.mark("isFeatured");
   }
 
   clearFeatured(): void {
@@ -416,6 +453,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._isFeatured = undefined;
+    this.changeTracker.mark("isFeatured");
   }
   updateSeo(seoUpdate: UpdateSeoMetaType): void {
     if (this._status.isDeleted()) {
@@ -467,6 +505,7 @@ export class ProductEntity implements ProductProps {
         cannonicalUrl: seoUpdate.cannonicalUrl,
       });
     }
+    this.changeTracker.mark("seo");
   }
 
   clearSeo(): void {
@@ -479,6 +518,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._seo = undefined;
+    this.changeTracker.mark("seo");
   }
 
   updateAttributes(newAttributes: AllUniqueKeyAndValuesFilters): void {
@@ -491,6 +531,7 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._attributes = newAttributes;
+    this.changeTracker.mark("attributes");
   }
 
   clearAttributes(): void {
@@ -503,50 +544,75 @@ export class ProductEntity implements ProductProps {
       );
     }
     this._attributes = undefined;
+    this.changeTracker.mark("attributes");
   }
 
-  removeImages(imageIds:string[]){
-    this._images = this.images?.filter((image)=>!imageIds.includes(image.id))
-  }
-
-  addImage(image:ImageVO){
-    this._images?.push(image)
-  }
-  reorderImages(order: string[]): void {
-  if (!this._images) return;
-
-  const imageMap = new Map(this._images.map((img) => [img.id, img]));
-  const reordered: ImageVO[] = [];
-
-  for (const id of order) {
-    const img = imageMap.get(id);
-    if (!img) {
+  removeImages(imageIds: string[]) {
+    if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
         "images",
-        "invalid_reorder_id",
-        `Cannot reorder images — image ID not found: ${id}`,
-        { id, productId: this._id }
+        "immutable_when_deleted",
+        "Cannot remove images of deleted product",
+        this._id
       );
     }
-    reordered.push(img);
+    this._images = this.images?.filter((image) => !imageIds.includes(image.id));
+    this.changeTracker.mark("images");
   }
 
-  if (reordered.length !== this._images.length) {
-    throw ValidationError.domainRule(
-      "images",
-      "incomplete_reorder",
-      `Order must include all images. Received ${reordered.length}, expected ${this._images.length}`,
-      { orderLength: order.length, imageCount: this._images.length }
-    );
-  }
+  addImage(image: ImageVO): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "images",
+        "immutable_when_deleted",
+        "Cannot add image to a deleted product",
+        this._id
+      );
+    }
 
-  // Set primary: only first image
-  for (let i = 0; i < reordered.length; i++) {
-    reordered[i].isPrimary = i === 0;
-  }
+    if (!this._images) {
+      this._images = [];
+    }
 
-  this._images = reordered;
-}
+    this._images.push(image);
+    this.changeTracker.mark("images");
+  }
+  reorderImages(order: string[]): void {
+    if (!this._images) return;
+
+    const imageMap = new Map(this._images.map((img) => [img.id, img]));
+    const reordered: ImageVO[] = [];
+
+    for (const id of order) {
+      const img = imageMap.get(id);
+      if (!img) {
+        throw ValidationError.domainRule(
+          "images",
+          "invalid_reorder_id",
+          `Cannot reorder images — image ID not found: ${id}`,
+          { id, productId: this._id }
+        );
+      }
+      reordered.push(img);
+    }
+
+    if (reordered.length !== this._images.length) {
+      throw ValidationError.domainRule(
+        "images",
+        "incomplete_reorder",
+        `Order must include all images. Received ${reordered.length}, expected ${this._images.length}`,
+        { orderLength: order.length, imageCount: this._images.length }
+      );
+    }
+
+    // Set primary: only first image
+    for (let i = 0; i < reordered.length; i++) {
+      reordered[i].isPrimary = i === 0;
+    }
+
+    this._images = reordered;
+    this.changeTracker.mark("images");
+  }
 
   updateMultiple(updates: ProductDomainUpdateType): void {
     if (updates.name !== undefined) {
@@ -580,8 +646,6 @@ export class ProductEntity implements ProductProps {
         this.updateTags(updates.tags);
       }
     }
-
-    
 
     if (updates.price !== undefined) {
       this.updatePrice(updates.price);
@@ -618,5 +682,140 @@ export class ProductEntity implements ProductProps {
         this.updateAttributes(updates.attributes);
       }
     }
+  }
+
+  public addVariant(variant: ProductVariantEntity) {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "variants",
+        "immutable_when_deleted",
+        "Cannot add variants to a deleted product",
+        this._id
+      );
+    }
+    if (!this._variants) {
+      this._variants = [];
+    }
+
+    const skuAlreadExists = this._variants.some((vari) =>
+      variant.sku.equals(vari.sku)
+    );
+    if (skuAlreadExists) {
+      throw ValidationError.domainRule(
+        "variants",
+        "duplicate_sku",
+        "Variant SKUs must be unique",
+        { sku: variant.sku.value, productId: this._id }
+      );
+    }
+    this._variants.push(variant);
+    this._hasVariants = this._variants.length > 0;
+    this.changeTracker.mark("variants");
+    this.changeTracker.mark("hasVariants");
+  }
+
+  public removeVariants(variantIds: string[]): void {
+    if (!this._variants || this._variants.length === 0) {
+      throw ValidationError.domainRule(
+        "variants",
+        "no_variants_present",
+        "Product has no variants to remove",
+        this._id
+      );
+    }
+
+    const existingIds = this._variants.map((v) => v.id);
+    const missingIds = variantIds.filter((id) => !existingIds.includes(id));
+
+    if (missingIds.length > 0) {
+      throw ValidationError.domainRule(
+        "variants",
+        "not_found",
+        "Some variant IDs do not exist on this product",
+        { productId: this._id, missingIds }
+      );
+    }
+
+    this._variants = this._variants.filter(
+      (variant) => !variantIds.includes(variant.id)
+    );
+
+    this._hasVariants = this._variants.length > 0;
+    this.changeTracker.mark("variants");
+    this.changeTracker.mark("hasVariants");
+  }
+
+  public updateVariant(
+    update: Omit<VariantUpdateType, "images" | "inventory">,
+    imagesOperation?: { add?: ImageVO[]; remove?: string[]; order: string[] }
+  ): void {
+    if (!this._variants || this._variants.length === 0) {
+      throw ValidationError.domainRule(
+        "variants",
+        "missing",
+        "No variants exist on this product",
+        this._id
+      );
+    }
+
+    const variant = this._variants.find((v) => v.id === update.id);
+
+    if (!variant) {
+      throw ValidationError.domainRule(
+        "variants",
+        "not_found",
+        `Variant with ID ${update.id} not found`,
+        { productId: this._id, variantId: update.id }
+      );
+    }
+
+    variant.updateFromCommand(update);
+    if (imagesOperation) {
+      const hasImagesOperations =
+        (imagesOperation.add?.length ?? 0) > 0 ||
+        (imagesOperation.remove?.length ?? 0) > 0;
+      const hasOrder = (imagesOperation.order?.length ?? 0) > 0;
+      if (hasImagesOperations && !hasOrder) {
+        throw ValidationError.domainRule(
+          "variants",
+          "order_must_be_present",
+          `Variant with id ${update.id} has image update requested but without order provided`
+        );
+      }
+
+      if (imagesOperation.remove?.length) {
+        variant.removeImages(imagesOperation.remove);
+      }
+      if (imagesOperation.add?.length) {
+        variant.addImages(imagesOperation.add);
+      }
+      if (imagesOperation.order.length) {
+        variant.reorderImages(imagesOperation.order);
+      }
+    }
+
+    this.changeTracker.mark("variants");
+  }
+
+  public toUpdateObject() {
+    if (!this.changeTracker.hasChanges()) {
+      throw ApiError.badRequest(
+        "You called update method but no changes were done"
+      );
+    }
+    return this.changeTracker.toUpdate(this);
+  }
+
+  public getVariantById(id: string) {
+    const foundVariant = this._variants?.find((variant) => variant.id === id);
+    if (!foundVariant) {
+      throw ValidationError.domainRule(
+        "variants",
+        "variant_id_must_exist",
+        "could not find required variant",
+        id
+      );
+    }
+    return foundVariant;
   }
 }

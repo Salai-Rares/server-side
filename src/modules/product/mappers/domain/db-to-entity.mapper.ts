@@ -22,12 +22,14 @@ export class ProductFromPersistanceToEntityMapper {
       id: (dbData._id as Types.ObjectId).toString(),
       sku: new ProductSkuVO(dbData.sku),
       name: dbData.name,
-      description: new ProductDescriptionVO(dbData.description),
+      description: dbData.description
+        ? new ProductDescriptionVO(dbData.description)
+        : undefined,
       shortDescription: dbData.shortDescription
         ? new ShortProductDescriptionVO(dbData.shortDescription)
         : undefined,
       brand: dbData.brand?.toString(),
-      categories: dbData.categories.map((cat) => cat.toString()),
+      categories: dbData.categories?.map((cat) => cat.toString()),
       tags: dbData.tags || [],
       images: dbData.images?.map((image) => ({
         id: image._id.toString(),
@@ -35,10 +37,10 @@ export class ProductFromPersistanceToEntityMapper {
         alt: image.alt,
         isPrimary: image.isPrimary ?? false,
       })),
-      price: new PriceVO({
+      price: dbData.price ? new PriceVO({
         amount: dbData.price.amount,
         currency: dbData.price.currency,
-      }),
+      }): undefined,
       discount: dbData.discount ? new DiscountVO(dbData.discount) : undefined,
       variants: dbData.variants?.map(
         VariantProductFromPersistanceToEntity.fromPersistanceToEntity

@@ -22,6 +22,63 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
     @inject(TYPES.InventoryRepositoryWrite)
     private inventoryRepositoryWrite: IInventoryRepositoryWrite
   ) {}
+
+ async saveInventoryForKnownProduct(
+  product: ProductEntity,
+  inventory: CreateInventoryType,
+  options?: { session?: ClientSession }
+): Promise<InventoryEntity> {
+  const allInventories = await this.inventoryReadService.findInventoriesByProductId(
+    product.id,
+    options
+  );
+
+  this.commonValidationSaveInventory(inventory, allInventories, product);
+
+  const inventoryEntity = new InventoryEntity({
+    id: newHexStringId(),
+    ...InventoryDtoToEntityMapper.mapToEntity(inventory),
+  });
+
+  return await this.inventoryRepositoryWrite.saveInventory(inventoryEntity, options);
+}
+  private commonValidationSaveInventory(
+    inventory: CreateInventoryType,
+    allInventories: InventoryEntity[],
+    product: ProductEntity
+  ): void {
+    const isRoot = !inventory.referenceVariantId;
+
+    if (!isRoot) {
+      const variantExists = product.variants?.some(
+        (v) => v.id === inventory.referenceVariantId
+      );
+      if (!variantExists) {
+        throw ApiError.notFound(
+          `Variant ${inventory.referenceVariantId} not found in product ${product.id}`
+        );
+      }
+    }
+
+    const hasRootInventory = allInventories.some((i) => !i.referenceVariantId);
+    const hasVariantInventories = allInventories.some(
+      (i) => !!i.referenceVariantId
+    );
+
+    if (isRoot && hasVariantInventories) {
+      throw ApiError.businessRuleViolation(
+        "Cannot add root inventory when variant inventories already exist",
+        "root_inventory_conflict"
+      );
+    }
+
+    if (!isRoot && hasRootInventory) {
+      throw ApiError.businessRuleViolation(
+        "Cannot add variant inventory when root inventory already exists",
+        "variant_inventory_conflict"
+      );
+    }
+  }
   async saveInventory(
     inventory: CreateInventoryType,
     options?: { session: ClientSession }
@@ -33,43 +90,17 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
       );
 
     if (!product) {
-      throw ApiError.notFound("Requested product does not exist", inventory.referenceRootId);
-    }
-    if (inventory.referenceVariantId) {
-      const variantExists = product.variants?.some(
-        (variant) => variant.id === inventory.referenceVariantId
+      throw ApiError.notFound(
+        "Requested product does not exist",
+        inventory.referenceRootId
       );
-
-      if (!variantExists) {
-        throw ApiError.notFound(
-          `Variant ${inventory.referenceVariantId} not found in product ${inventory.referenceRootId}`
-        );
-      }
     }
-
-    const hasRootInventory = !inventory.referenceVariantId;
     const allInventories =
       await this.inventoryReadService.findInventoriesByProductId(
         inventory.referenceRootId,
         options
       );
-
-    if (hasRootInventory && allInventories.length > 0) {
-      throw ApiError.businessRuleViolation(
-        "Cannot add root inventory when variant inventories already exist",
-        "root_inventory_conflict"
-      );
-    }
-
-    if (
-      !hasRootInventory &&
-      allInventories.some((i) => !i.referenceVariantId)
-    ) {
-      throw ApiError.businessRuleViolation(
-        "Cannot add variant inventory when root inventory already exists",
-        "variant_inventory_conflict"
-      );
-    }
+    this.commonValidationSaveInventory(inventory, allInventories, product);
     const inventoryEntity = new InventoryEntity({
       id: newHexStringId(),
       ...InventoryDtoToEntityMapper.mapToEntity(inventory),

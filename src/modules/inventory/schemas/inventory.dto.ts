@@ -12,10 +12,7 @@ export const UpdateInventoryByIDSchema = UpdateableInventorySchema.extend({
   id: z.string(),
 }).strip();
 
-const updatableKeysSchema = UpdateableInventorySchema.extend({
-  inStock: z.boolean(),
-  status:z.enum(PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES)
-});
+
 
 export const InventoryOperationSchema = z
   .object({
@@ -23,20 +20,20 @@ export const InventoryOperationSchema = z
     update: UpdateInventoryByIDSchema.optional(),
     remove: z.string().optional(), // inventory id
   })
-  .refine((data) => {
-    const keys = ["create", "update", "remove"].filter(
-      (k) => data[k as keyof typeof data] !== undefined
-    );
-    return keys.length === 1;
-  }, {
-    message: "Exactly one of create, update, or remove must be provided.",
-  });
-
+  .refine(
+    (data) => {
+      const keys = ["create", "update", "remove"].filter(
+        (k) => data[k as keyof typeof data] !== undefined
+      );
+      return keys.length === 1;
+    },
+    {
+      message: "Exactly one of create, update, or remove must be provided.",
+    }
+  );
 
 export type InventoryCreateType = z.infer<typeof InventorySchema>;
 export type UpdateInventoryType = z.infer<typeof UpdateInventoryByIDSchema>;
 export type UpdateableInventoryType = z.infer<typeof UpdateableInventorySchema>;
-export type UpdateableInventoryFieldsTypes = keyof z.infer<
-  typeof updatableKeysSchema
->;
-export type InventoryOperationType = z.infer<typeof InventoryOperationSchema>
+
+export type InventoryOperationType = z.infer<typeof InventoryOperationSchema>;

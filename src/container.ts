@@ -54,6 +54,8 @@ import { IInventoryRepositoryDelete } from "./modules/inventory/types/delete/inv
 import { InventoryRepositoryDelete } from "./modules/inventory/repositories/inventory-delete.repository";
 import { IInventoryServiceDelete } from "./modules/inventory/types/delete/inventory-delete.service.types";
 import { InventoryDeleteUseCase } from "./modules/inventory/services/inventory-delete.service";
+import { IProductRepositoryUpdate } from "./modules/product/types/update/product-update.repository.types";
+import { ProductRepositoryUpdate } from "./modules/product/repositories/product-update.repository";
 
 // Create Inversify Container
 const container = new Container();
@@ -145,4 +147,5 @@ container
   container.bind<IInventoryRepositoryUpdate>(TYPES.InventoryRepositoryUpdate).to(InventoryRepositoryUpdate).inSingletonScope();
   container.bind<IInventoryRepositoryDelete>(TYPES.InventoryRepositoryDelete).to(InventoryRepositoryDelete).inSingletonScope();
   container.bind<IInventoryServiceDelete>(TYPES.InventoryDeleteUseCase).to(InventoryDeleteUseCase).inSingletonScope();
+  container.bind<IProductRepositoryUpdate>(TYPES.ProductRepositoryUpdate).to(ProductRepositoryUpdate).inSingletonScope();
 export { container };

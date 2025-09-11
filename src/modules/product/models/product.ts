@@ -99,11 +99,11 @@ const ProductSchema = new Schema<IProductDocument>(
         message: "Invalid SKU format",
       },
     },
-    description: { type: String, required: true },
+    description: { type: String},
     shortDescription: { type: String },
 
     brand: { type: Types.ObjectId, ref: "Brand" },
-    categories: [{ type: Types.ObjectId, ref: "Category", required: true }],
+    categories: [{ type: Types.ObjectId, ref: "Category"}],
     //used for visual
     tags: {
       type: [String],
@@ -112,10 +112,10 @@ const ProductSchema = new Schema<IProductDocument>(
     },
 
     images: { type: [ProductImageSchema]},
-    price: { type: PriceSchema, required: true },
+    price: { type: PriceSchema },
     discount: { type: DiscountSchema },
     hasVariants: { type: Boolean, default: false },
-    variants: { type: [VariantSchema], required: true, default: [] },
+    variants: { type: [VariantSchema], default: [] },
 
     isFeatured: { type: Boolean, default: false },
     status: {
@@ -137,7 +137,7 @@ const ProductSchema = new Schema<IProductDocument>(
 
     seo: { type: SeoMetaSchema },
 
-    attributes: { type: [AttributeSchema], required: true, default: [] },
+    attributes: { type: [AttributeSchema],  default: [] },
   },
   {
     timestamps: true,

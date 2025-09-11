@@ -1,6 +1,6 @@
 export const PRODUCT_LIMITS = {
  NAME: {
-   MIN_LENGTH: 1,
+   MIN_LENGTH: 5,
    MAX_LENGTH: 100,
  },
  DESCRIPTION: {

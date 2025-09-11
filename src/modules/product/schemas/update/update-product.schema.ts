@@ -12,6 +12,7 @@ import {
   SeoMetaSchema,
   AttributeSchema,
   VariantBaseSchema,
+  ProductImageSchema,
 } from "../shared.schema";
 import { VariantCreateCommandSchema } from "./update-product.command.schema";
 
@@ -55,6 +56,7 @@ export const VariantUpdateSchema = z
     images: ImageOperationsSchema.optional(), // Granular image operations for variants
   })
   .strip();
+
 
 const VariantOperationsSchema = z
   .object({
@@ -161,14 +163,14 @@ export const UpdateProductRequestSchema = z
       });
     }
 
-    if (uploadedMap && !hasImageAdd && !hasVariantAddWithImages) {
-      ctx.addIssue({
-        path: ["uploadedMap"],
-        code: z.ZodIssueCode.custom,
-        message:
-          "uploadedMap is not expected while we don't have any added image",
-      });
-    }
+    // if (uploadedMap && !hasImageAdd && !hasVariantAddWithImages) {
+    //   ctx.addIssue({
+    //     path: ["uploadedMap"],
+    //     code: z.ZodIssueCode.custom,
+    //     message:
+    //       "uploadedMap is not expected while we don't have any added image",
+    //   });
+    // }
 
     if (uploadedMap && (hasImageAdd || hasVariantAddWithImages)) {
       let expectedCount = imageOperations?.add?.length ?? 0;
@@ -261,6 +263,8 @@ export const UpdateProductRequestSchema = z
     }
   });
 
+
+
 // ===============================
 // EXPORTED TYPES
 // ===============================
@@ -280,3 +284,4 @@ export type ImageOperationsType = z.infer<typeof ImageOperationsSchema>;
 // Variant operation types
 export type VariantCreateType = z.infer<typeof VariantCreateSchema>;
 export type VariantUpdateType = z.infer<typeof VariantUpdateSchema>;
+

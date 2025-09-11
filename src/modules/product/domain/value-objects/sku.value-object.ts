@@ -241,4 +241,5 @@ export class ProductSkuVO {
     const parts = this._value.split('-');
     return new ProductSkuVO(parts.slice(0, 3).join('-'));
   }
+  
 }

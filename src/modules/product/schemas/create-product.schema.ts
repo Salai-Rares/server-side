@@ -2,7 +2,7 @@ import { z } from "zod";
 import { InventorySchema } from "@/modules/inventory/schemas/inventory.dto";
 import { PRODUCT_LIMITS } from "../constants/product-validation.constants";
 import {
-  ProductCoreSchema,
+  ProductDraftSchema,
   VariantBaseSchema,
   RatingSummarySchema,
   objectIdSchema,
@@ -16,7 +16,7 @@ export const VariantWithInventorySchema = VariantBaseSchema.extend({
   inventory: InventorySchema.optional(),
 }).strip();
 
-export const CreateProductSchema = ProductCoreSchema.extend({
+export const CreateProductSchema = ProductDraftSchema.extend({
   variants: z
     .array(VariantWithInventorySchema)
     .max(PRODUCT_LIMITS.VARIANTS.MAX_COUNT)
@@ -44,7 +44,7 @@ export const CreateProductSchema = ProductCoreSchema.extend({
 // RESPONSE SCHEMA
 // ===============================
 
-export const ProductResponseSchema = ProductCoreSchema.extend({
+export const ProductResponseSchema = ProductDraftSchema.extend({
   _id: objectIdSchema.transform((id) => id.toString()),
   slug: z.string().min(1),
   variants: z.array(VariantBaseSchema).optional(),

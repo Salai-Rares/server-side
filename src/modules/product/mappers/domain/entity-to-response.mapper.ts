@@ -8,23 +8,26 @@ export class ProductEntityToResponseDtoMapper {
       name: entity.name,
       slug: entity.slug.value,
       sku: entity.sku.value,
-      description: entity.description.toString(),
+      description: entity.description?.toString() ?? null,
       shortDescription: entity.shortDescription?.toString() ?? null, // Optional
       brand: entity.brand ?? null, // Optional ObjectId
       categories: entity.categories, // Required array
       tags: entity.tags ?? [],
 
-      images: entity.images?.map(img => ({
-        id: img.id,
-        url: img.url,
-        alt: img.alt,
-        isPrimary: img.isPrimary,
-      })) ?? [],
+      images:
+        entity.images?.map((img) => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt,
+          isPrimary: img.isPrimary,
+        })) ?? [],
 
-      price: {
-        amount: entity.price.amount,
-        currency: entity.price.currency,
-      },
+      price: entity.price
+        ? {
+            amount: entity.price.amount,
+            currency: entity.price.currency,
+          }
+        : null,
 
       discount: entity.discount
         ? {
@@ -36,7 +39,10 @@ export class ProductEntityToResponseDtoMapper {
 
       hasVariants: entity.hasVariants, // Required boolean
 
-      variants: entity.variants?.map(VariantProductEntityToResponseDtoMapper.variantToDto) ?? [],
+      variants:
+        entity.variants?.map(
+          VariantProductEntityToResponseDtoMapper.variantToDto
+        ) ?? [],
 
       isFeatured: entity.isFeatured ?? null, // Optional boolean
       status: entity.status.value, // Required
@@ -48,7 +54,7 @@ export class ProductEntityToResponseDtoMapper {
         percentageDistribution: entity.ratings.percentageDistribution ?? null,
       },
 
-      reviewsCount: entity.reviewCount, // Required
+      reviewsCount: entity.reviewsCount, // Required
 
       seo: entity.seo
         ? {

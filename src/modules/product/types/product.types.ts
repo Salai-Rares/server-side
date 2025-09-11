@@ -9,17 +9,17 @@ export interface IProductBase {
   sku: string;
 
   name: string;
-  description: string;
+  description?: string;
   shortDescription?: string;
 
   //will be added to the list of attributes
   brand?: Types.ObjectId;
-  categories: mongoose.Types.ObjectId[]; // Array of ObjectIds referencing the Category model
+  categories?: mongoose.Types.ObjectId[]; // Array of ObjectIds referencing the Category model
   //will be added to the list of attributes
   tags?: string[]; //e.g. ["eco-friendly","bestseller"]
 
   images?: ProductImage[];
-  price: PriceType;
+  price?: PriceType;
   discount?: DiscountType;
   //variants.productOptions will be added to the list of attributes
   hasVariants: boolean;

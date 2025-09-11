@@ -6,5 +6,5 @@ import { ProductUpdateCommand } from "../../services/commands/product-update.com
 export interface IProductUpdateService {
   updateProductWithInventories(
     product: ProductUpdateCommand
-  ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }>;
+  ): Promise<{ product: ProductEntity; inventories: InventoryEntity[] }>;
 }

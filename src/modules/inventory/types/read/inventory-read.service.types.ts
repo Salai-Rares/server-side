@@ -8,7 +8,7 @@ export interface IInventoryServiceRead {
   ): Promise<InventoryEntity | null>;
   findInventoriesByProductId(
     id: string,
-    options?: { session: ClientSession }
+    options?: { session?: ClientSession }
   ): Promise<InventoryEntity[]>;
   findInventoriesByProductsIds(
     ids: string[],

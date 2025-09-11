@@ -15,8 +15,8 @@ export class ChangeTracker<T, K extends keyof T> {
 
   clear() {
     this.changedFields.clear();
+    
   }
-
   hasChanges(): boolean {
     return this.changedFields.size > 0;
   }

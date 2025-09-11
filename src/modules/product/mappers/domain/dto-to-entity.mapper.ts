@@ -22,17 +22,17 @@ export class ProductDtoToEntityMapper {
     return {
       sku: new ProductSkuVO(dto.sku),
 
-      description: new ProductDescriptionVO(dto.description),
+      description: dto.description ? new ProductDescriptionVO(dto.description) : undefined,
       shortDescription: dto.shortDescription
         ? new ShortProductDescriptionVO(dto.shortDescription)
         : undefined,
       brand: dto.brand,
       categories: dto.categories,
       tags: dto.tags,
-      price: new PriceVO({
+      price: dto.price? new PriceVO({
         currency: dto.price.currency,
         amount: dto.price.amount,
-      }),
+      }) : undefined,
       discount: dto.discount
         ? new DiscountVO({
             type: dto.discount.type,

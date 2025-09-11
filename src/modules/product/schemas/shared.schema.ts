@@ -109,7 +109,7 @@ export const VariantBaseSchema = z
 // PRODUCT CORE FIELDS
 // ===============================
 
-export const ProductCoreSchema = z.object({
+export const ProductDraftSchema = z.object({
   sku: z
     .string()
     .min(PRODUCT_LIMITS.SKU.MIN_LENGTH)
@@ -121,7 +121,8 @@ export const ProductCoreSchema = z.object({
   description: z
     .string()
     .min(PRODUCT_LIMITS.DESCRIPTION.MIN_LENGTH)
-    .max(PRODUCT_LIMITS.DESCRIPTION.MAX_LENGTH),
+    .max(PRODUCT_LIMITS.DESCRIPTION.MAX_LENGTH)
+    .optional(),
   shortDescription: z
     .string()
     .max(PRODUCT_LIMITS.SHORT_DESCRIPTION.MAX_LENGTH)
@@ -139,7 +140,8 @@ export const ProductCoreSchema = z.object({
       })
     )
     .min(PRODUCT_LIMITS.CATEGORIES.MIN_COUNT)
-    .max(PRODUCT_LIMITS.CATEGORIES.MAX_COUNT),
+    .max(PRODUCT_LIMITS.CATEGORIES.MAX_COUNT)
+    .optional(),
   tags: z
     .array(z.string().max(PRODUCT_LIMITS.TAGS.TAG_MAX_LENGTH))
     .max(PRODUCT_LIMITS.TAGS.MAX_COUNT)
@@ -149,7 +151,7 @@ export const ProductCoreSchema = z.object({
     .min(PRODUCT_LIMITS.IMAGES.MIN_COUNT)
     .max(PRODUCT_LIMITS.IMAGES.MAX_COUNT)
     .optional(),
-  price: PriceSchema,
+  price: PriceSchema.optional(),
   discount: DiscountSchema.optional(),
   isFeatured: z.boolean().optional(),
   seo: SeoMetaSchema.optional(),
@@ -168,4 +170,4 @@ export type SeoMetaType = z.infer<typeof SeoMetaSchema>;
 export type AttributeType = z.infer<typeof AttributeSchema>;
 export type ProductStatusType = z.infer<typeof ProductStatusEnum>;
 export type VariantBaseType = z.infer<typeof VariantBaseSchema>;
-export type ProductCoreType = z.infer<typeof ProductCoreSchema>;
+export type ProductCoreType = z.infer<typeof ProductDraftSchema>;
