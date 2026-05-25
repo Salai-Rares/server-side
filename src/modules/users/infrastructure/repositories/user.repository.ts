@@ -21,6 +21,26 @@ export class UserRepository implements IUserRepository {
     return UserDbToEntityMapper.toDomain(doc);
   }
 
+  async findByEmailWithPassword(email: string): Promise<UserEntity | null> {
+    const doc = await UserModel.findOne({ email: email.toLowerCase() }).select("+passwordHash");
+    if (!doc) return null;
+    return UserDbToEntityMapper.toDomain(doc);
+  }
+
+  async updateLoginStatus(user: UserEntity): Promise<void> {
+    await UserModel.updateOne(
+      { _id: toObjectId(user.id) },
+      {
+        $set: {
+          failedLoginAttempts: user.failedLoginAttempts ?? 0,
+          lockUntil: user.lockUntil ?? null,
+          lastLoginAt: user.lastLoginAt ?? null,
+          updatedAt: user.updatedAt,
+        },
+      }
+    );
+  }
+
   async updateEmailVerification(userId: string, emailVerification: EmailVerificationVO): Promise<void> {
     await UserModel.updateOne(
       { _id: toObjectId(userId) },

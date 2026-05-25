@@ -256,6 +256,25 @@ export class UserEntity extends AggregateRoot implements UserProps {
     return new UserEntity(props);
   }
 
+  isLocked(): boolean {
+    return this._lockUntil != null && this._lockUntil > new Date();
+  }
+
+  recordFailedLogin(): void {
+    this._failedLoginAttempts = (this._failedLoginAttempts ?? 0) + 1;
+    if (this._failedLoginAttempts >= 5) {
+      this._lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+    }
+    this._updatedAt = new Date();
+  }
+
+  recordSuccessfulLogin(): void {
+    this._failedLoginAttempts = 0;
+    this._lockUntil = undefined;
+    this._lastLoginAt = new Date();
+    this._updatedAt = new Date();
+  }
+
   markEmailVerified(): void {
     this._emailVerification = this._emailVerification.markVerified();
     this._updatedAt = new Date();

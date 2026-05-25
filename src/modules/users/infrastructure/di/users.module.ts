@@ -15,6 +15,8 @@ import { IEmailEventHandler } from "@/core/application/ports/events/outbox/handl
 import { ConfirmationEmailHandler } from "../../domain/events/user-registered/user-registered.email.handler";
 import { IVerifyEmailUseCase } from "../../application/use-cases/verify-email/verify-email.use-case.interface";
 import { VerifyEmailUseCase } from "../../application/use-cases/verify-email/verify-email.use-case";
+import { IUserLoginUseCase } from "../../application/use-cases/login/user-login.use-case.interface";
+import { UserLoginUseCase } from "../../application/use-cases/login/user-login.use-case";
 
 export const usersModule = new ContainerModule((bind: interfaces.Bind) => {
   bind<PasswordPolicy>(PasswordPolicy).toSelf().inSingletonScope();
@@ -35,5 +37,8 @@ export const usersModule = new ContainerModule((bind: interfaces.Bind) => {
   );
   bind<IVerifyEmailUseCase>(USERS_TYPES.VerifyEmailUseCase)
     .to(VerifyEmailUseCase)
+    .inSingletonScope();
+  bind<IUserLoginUseCase>(USERS_TYPES.UserLoginUseCase)
+    .to(UserLoginUseCase)
     .inSingletonScope();
 });

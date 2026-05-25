@@ -17,7 +17,9 @@ export const sessionMiddleware = session({
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24 * 7,
+    maxAge: process.env.NODE_ENV === "production"
+      ? 1000 * 60 * 60 * 24 * 7  // 7 days
+      : 1000 * 60 * 1,           // 1 minute for development/testing
   },
 });
 

@@ -224,6 +224,14 @@ const UserSchema = new Schema<IUserDocument>(
       type: Boolean,
       default: false,
     },
+    // Security - Brute Force Protection
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+    },
     // Timestamps
     lastLoginAt: {
       type: Date,
