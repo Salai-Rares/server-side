@@ -30,7 +30,7 @@ export const processImagesMiddleware = (req: ProcessedRequest, res: Response, ne
       productImages: fileGroups.images.map((file, index) => ({
         url: `/images/products/${file.filename}`,
         alt: file.filename,
-        isPrimary: index === primaryIndex,
+ 
       }))
     };
   }
@@ -40,18 +40,13 @@ export const processImagesMiddleware = (req: ProcessedRequest, res: Response, ne
     const match = fieldName.match(/variantImages\[(\d+)\]/);
     if (match) {
       const variantIndex = parseInt(match[1]);
-      const variantPrimary = req.body.variantPrimary || [];
-      const primaryIndex = Array.isArray(variantPrimary) 
-        ? (Number(variantPrimary[variantIndex] || 0))
-        : 0;
-
       if (!req.processedImages) req.processedImages = {};
       if (!req.processedImages.variantImages) req.processedImages.variantImages = {};
       
       req.processedImages.variantImages[variantIndex] = fileGroups[fieldName].map((file, index) => ({
         url: `/images/products/${file.filename}`,
         alt: file.filename,
-        isPrimary: index === primaryIndex,
+ 
       }));
     }
   });

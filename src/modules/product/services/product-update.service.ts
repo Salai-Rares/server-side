@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 
 import { TYPES } from "@/shared/types";
 
-import { newHexStringId } from "@/shared/utils";
+
 
 import { ProductVariantEntity } from "../domain/variant-product.entity";
 import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
@@ -24,6 +24,8 @@ import { CreateInventoryType } from "@/modules/inventory/schemas/create-inventor
 import { IProductRepositoryUpdate } from "../types/update/product-update.repository.types";
 import mongoose from "mongoose";
 import { IInventoryServiceRead } from "@/modules/inventory/types";
+import { SlugVO } from "../domain/value-objects/slug.value-object";
+import { IIdGenerator } from "@/core/application/ports/id/id-generator.interface";
 @injectable()
 export class ProductUpdateUseCase implements IProductUpdateService {
   constructor(
@@ -39,7 +41,8 @@ export class ProductUpdateUseCase implements IProductUpdateService {
     private productRepositoryUpdate: IProductRepositoryUpdate,
     @inject(TYPES.InventoryReadUseCase)
     private inventoryReadUseCase: IInventoryServiceRead,
-    @inject(TYPES.Logger) private logger: ILogger
+    @inject(TYPES.Logger) private logger: ILogger,
+    @inject(TYPES.IdGenerator) private idGenerator : IIdGenerator
   ) {}
   async updateProductWithInventories(
     command: ProductUpdateCommand
@@ -108,12 +111,11 @@ export class ProductUpdateUseCase implements IProductUpdateService {
             }
             if (add?.length) {
               for (const img of add) {
-                const mongoImageId = newHexStringId();
+                const mongoImageId = this.idGenerator.generate();
                 const imageToPush: ImageVO = {
                   id: mongoImageId,
                   url: img.url,
                   alt: img.alt,
-                  isPrimary: img.isPrimary,
                 };
                 const indexOfTempID = order.indexOf(img.tempId);
                 if (indexOfTempID !== -1) {
@@ -173,20 +175,28 @@ export class ProductUpdateUseCase implements IProductUpdateService {
           //add variants
           if (variantOperationsRequest.add) {
             for (const variantToAdd of variantOperationsRequest.add) {
-              const { sku, productOptions, price, images, inventory } =
-                variantToAdd;
-              const dtoForMapping = { sku, productOptions, price };
+              const {
+                sku,
+                productOptions,
+                price,
+                images,
+                inventory,
+                discountData,
+                name,
+              } = variantToAdd;
+              const dtoForMapping = { sku, productOptions, price, name };
               const resulDto = ProductVariantMapper.toDomain(dtoForMapping);
               const arrayOfImageVO: ImageVO[] | undefined = images?.map(
                 (img) => ({
-                  id: newHexStringId(),
+                  id: this.idGenerator.generate(),
                   ...img,
                 })
               );
-              const variantId = newHexStringId();
+              const variantId = this.idGenerator.generate();
               const variantEntity: ProductVariantEntity =
                 new ProductVariantEntity({
                   id: variantId,
+                  slug: SlugVO.fromName(name),
                   ...resulDto,
                   images: arrayOfImageVO,
                 });
@@ -241,12 +251,11 @@ export class ProductUpdateUseCase implements IProductUpdateService {
                 if (add.length) {
                   imagesOperation.add = [];
                   for (const img of add) {
-                    const id = newHexStringId();
+                    const id = this.idGenerator.generate();
                     imagesOperation.add.push({
                       id,
                       url: img.url,
                       alt: img.alt,
-                      isPrimary: img.isPrimary,
                     });
 
                     const indexOfTempID = order.indexOf(img.tempId);

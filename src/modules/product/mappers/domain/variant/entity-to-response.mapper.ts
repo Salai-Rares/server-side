@@ -5,7 +5,8 @@ export class VariantProductEntityToResponseDtoMapper {
     return {
       id: variant.id,
       sku: variant.sku.value,
-      productOptions: Object.fromEntries(variant.productOptions.entries()),
+      productOptions: variant.productOptions ? Object.fromEntries(variant.productOptions.entries()) : null,
+      discount: variant.discount ?? null,
       price: variant.price
         ? {
             amount: variant.price.amount,
@@ -17,7 +18,7 @@ export class VariantProductEntityToResponseDtoMapper {
           id: img.id,
           url: img.url,
           alt: img.alt,
-          isPrimary: img.isPrimary,
+   
         })) ?? null,
     };
   }

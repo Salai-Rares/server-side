@@ -25,7 +25,6 @@ export class ProductUpdateInputAssembler {
           tempId: img.tempId,
           url: file ? `/images/products/${file.filename}` : "",
           alt: file ? file.originalname : "",
-          isPrimary: false,
         };
       });
     };

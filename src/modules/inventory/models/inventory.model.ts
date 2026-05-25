@@ -10,7 +10,7 @@ import { PRODUCT_LIMITS } from "@/modules/product/constants/product-validation.c
 
 const InventorySchema = new Schema<IInventoryDocument>(
   {
-    referenceRootId: { type: Schema.Types.ObjectId, required: true },
+    referenceRootId: { type: Schema.Types.ObjectId,ref:"Product", required: true },
     referenceVariantId: { type: Schema.Types.ObjectId, required: false },
     stock: { type: Number, required: true, min: 0, default: 0 },
     status: {

@@ -7,10 +7,7 @@ export function mapCreateProductRequest(req: Request): CreateProductType {
     const variants = product.variants || [];
     const files = req.files as Express.Multer.File[];
     // 1. Parse primary image selections
-    const mainPrimaryIndex = Number(req.body.primaryImageIndex ?? 0);
-    const variantPrimaryIndices = Array.isArray(req.body.variantPrimary)
-      ? req.body.variantPrimary.map(Number)
-      : [Number(req.body.variantPrimary || 0)];
+  
   
     // 2. Create file mapping
     const fileMap = files.reduce((acc, file) => {
@@ -23,12 +20,12 @@ export function mapCreateProductRequest(req: Request): CreateProductType {
       variants.forEach((variant: VariantWithInventoryType, variantIndex: number) => {
         const key = `variantImages[${variantIndex}]`;
         const variantFiles = fileMap[key] || [];
-        const primaryIndex = variantPrimaryIndices[variantIndex] || 0;
+     
   
         variant.images = variantFiles.map((file, fileIndex) => ({
           url: `/images/products/${file.filename}`,
           alt: `${file.filename}`,
-          isPrimary: fileIndex === primaryIndex,
+      
         }));
       });
       product.variants = variants;
@@ -39,7 +36,7 @@ export function mapCreateProductRequest(req: Request): CreateProductType {
     product.images = productImages.map((file, index) => ({
       url: `/images/products/${file.filename}`,
       alt: `${file.filename}`,
-      isPrimary: index === mainPrimaryIndex,
+
     }));
   
     return product;

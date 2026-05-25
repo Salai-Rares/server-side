@@ -40,7 +40,7 @@ export class GlobalErrorHandler {
   };
 
   /**
-   * Converts any error to a BaseError - much simpler now
+   * Converts any error to a BaseError 
    */
   private normalizeError(err: unknown, req: Request): BaseError {
     const context = this.contextBuilder.buildFromRequest(req);

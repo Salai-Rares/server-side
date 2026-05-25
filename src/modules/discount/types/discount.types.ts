@@ -1,10 +1,14 @@
 import { LeanDocument, Types } from "mongoose";
 
-export interface DiscountConditionType {
-  type: 'product' | 'category' | 'tag' | 'cart_total' | 'quantity' | 'user_segment';
-  operator: 'equals' | 'in' | 'greater_than' | 'less_than';
-  value: any;
-}
+export type DiscountConditionType =
+  | { type: "product"; operator: "equals" | "in"; value: string | string[] }
+  | { type: "variant"; operator: "equals" | "in"; value: string | string[] }
+  | { type: "category"; operator: "equals" | "in"; value: string | string[] }
+  | { type: "tag"; operator: "equals" | "in"; value: string | string[] }
+  | { type: "cart_total"; operator: "greater_than" | "less_than"; value: number }
+  | { type: "quantity"; operator: "equals" | "greater_than" | "less_than"; value: number }
+  | { type: "user_segment"; operator: "equals" | "in"; value: string | string[] };
+
 export interface IDiscountBase {
   name: string;
   description?: string;
@@ -15,12 +19,15 @@ export interface IDiscountBase {
   usageLimit?:number;
   usageCount:number;
   active:boolean;
-  conditions?:DiscountConditionType[]
+  priority:number;
+  conditions:DiscountConditionType[]
 }
 
 export interface IDiscount extends IDiscountBase {
     _id:Types.ObjectId;
 }
 
-export interface IDiscountDocument extends Document, IDiscountBase {}
+export interface IDiscountDocument extends Document, IDiscountBase {
+    _id: Types.ObjectId;
+}
 export type IDiscountLean = LeanDocument<IDiscount>;

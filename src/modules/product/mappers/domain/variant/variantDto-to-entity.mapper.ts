@@ -5,12 +5,18 @@ import { VariantBaseType, VariantWithInventoryType } from "../../../schemas";
 
 // variant.mapper.ts
 export class ProductVariantMapper {
-  static toDomain(raw: VariantBaseType): Omit<VariantProductProps,"id"|"images"> {
+  static toDomain(
+    raw: VariantBaseType
+  ): Omit<VariantProductProps, "id" | "images" | "discount" | "slug"> {
     return {
+      name: raw.name,
       sku: new ProductSkuVO(raw.sku),
-      productOptions: new Map(Object.entries(raw.productOptions)),
+      productOptions: raw.productOptions
+        ? new Map(Object.entries(raw.productOptions))
+        : undefined,
       price: raw.price ? new PriceVO(raw.price) : undefined,
-     
+      costPrice: raw.costPrice ? new PriceVO(raw.costPrice) : undefined,
+      vatRate: raw.vatRate,
     };
   }
 
@@ -19,7 +25,10 @@ export class ProductVariantMapper {
       sku: raw.sku,
       productOptions: raw.productOptions,
       price: raw.price,
-      images:raw.images
+      costPrice: raw.costPrice,
+      vatRate: raw.vatRate,
+      images: raw.images,
+      name: raw.name,
     };
   }
 }

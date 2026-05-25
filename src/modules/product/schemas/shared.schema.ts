@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Types } from "mongoose";
 import { isValidObjectId } from "@/shared/utils";
 import { PRODUCT_LIMITS } from "../constants/product-validation.constants";
+import { normalizeName } from "@/shared/utils/string-format.utils";
 
 // ===============================
 // CORE BUILDING BLOCKS
@@ -19,19 +20,14 @@ export const PriceSchema = z
   })
   .strip();
 
-export const DiscountSchema = z
-  .object({
-    type: z.enum(PRODUCT_LIMITS.DISCOUNT.TYPES),
-    value: z.number().positive(),
-    validUntil: z.date().optional(),
-  })
-  .strip();
+export const DiscountProductSchema = z.string().refine(isValidObjectId, {
+  message: "Invalid MongoDB ID format",
+});
 
 export const ProductImageSchema = z
   .object({
     url: z.string().max(PRODUCT_LIMITS.IMAGES.URL_MAX_LENGTH),
     alt: z.string().max(PRODUCT_LIMITS.IMAGES.ALT_MAX_LENGTH),
-    isPrimary: z.boolean().default(false),
   })
   .strip();
 
@@ -90,18 +86,29 @@ export const ProductStatusEnum = z.enum(PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES);
 // VARIANT SCHEMAS
 // ===============================
 
-export const VariantBaseSchema = z
+export const VariantDraftSchema = z
   .object({
+    name: z
+      .string()
+      .min(PRODUCT_LIMITS.NAME.MIN_LENGTH)
+      .max(PRODUCT_LIMITS.NAME.MAX_LENGTH),
     sku: z
       .string()
       .min(PRODUCT_LIMITS.SKU.MIN_LENGTH)
       .max(PRODUCT_LIMITS.SKU.MAX_LENGTH),
-    productOptions: z.record(z.string()),
+    productOptions: z.record(z.string()).optional(),
     price: PriceSchema.optional(),
+    costPrice: PriceSchema.optional(),
+    vatRate: z.coerce
+      .number()
+      .pipe(z.union([z.literal(5), z.literal(9), z.literal(21)]))
+      .optional(),
+
     images: z
       .array(ProductImageSchema)
       .max(PRODUCT_LIMITS.IMAGES.MAX_COUNT)
       .optional(),
+    discount: DiscountProductSchema.optional(),
   })
   .strip();
 
@@ -110,14 +117,15 @@ export const VariantBaseSchema = z
 // ===============================
 
 export const ProductDraftSchema = z.object({
-  sku: z
-    .string()
-    .min(PRODUCT_LIMITS.SKU.MIN_LENGTH)
-    .max(PRODUCT_LIMITS.SKU.MAX_LENGTH),
   name: z
     .string()
     .min(PRODUCT_LIMITS.NAME.MIN_LENGTH)
-    .max(PRODUCT_LIMITS.NAME.MAX_LENGTH),
+    .max(PRODUCT_LIMITS.NAME.MAX_LENGTH)
+    .transform((val) => normalizeName(val)),
+  sku: z
+    .string()
+    .min(PRODUCT_LIMITS.SKU.MIN_LENGTH)
+    .max(PRODUCT_LIMITS.SKU.MAX_LENGTH).transform((val)=>val.toLocaleUpperCase('ro-RO')),
   description: z
     .string()
     .min(PRODUCT_LIMITS.DESCRIPTION.MIN_LENGTH)
@@ -152,10 +160,17 @@ export const ProductDraftSchema = z.object({
     .max(PRODUCT_LIMITS.IMAGES.MAX_COUNT)
     .optional(),
   price: PriceSchema.optional(),
-  discount: DiscountSchema.optional(),
+  costPrice: PriceSchema.optional(),
+  vatRate: z.coerce
+    .number()
+    .pipe(z.union([z.literal(5), z.literal(9), z.literal(21)]))
+    .optional(),
+  discount: DiscountProductSchema.optional(),
+
   isFeatured: z.boolean().optional(),
   seo: SeoMetaSchema.optional(),
   attributes: z.array(AttributeSchema).optional(),
+  productOptions: z.record(z.string()).optional(),
 });
 
 // ===============================
@@ -163,11 +178,11 @@ export const ProductDraftSchema = z.object({
 // ===============================
 
 export type PriceType = z.infer<typeof PriceSchema>;
-export type DiscountType = z.infer<typeof DiscountSchema>;
+// export type DiscountType = z.infer<typeof DiscountSchema>;
 export type ProductImageType = z.infer<typeof ProductImageSchema>;
 export type RatingSummaryType = z.infer<typeof RatingSummarySchema>;
 export type SeoMetaType = z.infer<typeof SeoMetaSchema>;
 export type AttributeType = z.infer<typeof AttributeSchema>;
 export type ProductStatusType = z.infer<typeof ProductStatusEnum>;
-export type VariantBaseType = z.infer<typeof VariantBaseSchema>;
+export type VariantBaseType = z.infer<typeof VariantDraftSchema>;
 export type ProductCoreType = z.infer<typeof ProductDraftSchema>;

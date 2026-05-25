@@ -1,15 +1,17 @@
 import { InventorySchema } from "@/modules/inventory/schemas/inventory.dto";
 
-import { VariantBaseSchema, ProductImageSchema } from "../shared.schema";
+import { VariantDraftSchema, ProductImageSchema } from "../shared.schema";
 import { z } from "zod";
 import { VariantUpdateSchema } from "./update-product.schema";
+import { DiscountZodSchema } from "@/modules/discount/schemas/discount.schema";
 
 export const ProductImageCommandSchema = ProductImageSchema.extend({
     tempId:z.string()
 })
 
-export const VariantCreateCommandSchema = VariantBaseSchema.extend({
+export const VariantCreateCommandSchema = VariantDraftSchema.extend({
   inventory: InventorySchema.optional(),
+  discountData: DiscountZodSchema.optional(),
   images: z.array(ProductImageSchema).optional(),
 });
 export const ImageOperationsCommandSchema = z

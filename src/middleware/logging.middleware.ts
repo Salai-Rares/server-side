@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { container } from '../container';
+import { apiContainer } from '../infrastructure/di/container.api';
 import { TYPES } from '../shared/types';
 import { ILogger } from '../core/logger/logger.interface';
 
 export function expressLoggingMiddleware(req: Request, res: Response, next: NextFunction): void {
   // Get logger from container
-  const logger = container.get<ILogger>(TYPES.Logger);
+  const logger = apiContainer.get<ILogger>(TYPES.Logger);
   
   const start = Date.now();
   const method = req.method;

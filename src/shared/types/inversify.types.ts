@@ -10,6 +10,7 @@ export const TYPES = {
   FilterCache: Symbol.for("FilterCache"),
   CategoryRepository: Symbol.for("CategoryRepository"),
   RedisThirdParty: Symbol.for("RedisThirdParty"),
+  RedisCache:Symbol.for("RedisCache"),
   GlobalErrorHandler: Symbol.for("GlobalErrorHandler"),
   ValidateAndSanitizeQueryFilters: Symbol.for(
     "ValidateAndSanitizeQueryFilters"
@@ -35,7 +36,15 @@ export const TYPES = {
   InventoryRepositoryRead: Symbol.for("InventoryRepositoryRead"),
   InventoryReadUseCase: Symbol.for("InventoryReadUseCase"),
   InventoryRepositoryUpdate: Symbol.for("InventoryRepositoryUpdate"),
-  InventoryRepositoryDelete:Symbol.for("InventoryRepositoryDelete"),
+  InventoryRepositoryDelete: Symbol.for("InventoryRepositoryDelete"),
   InventoryDeleteUseCase: Symbol.for("InventoryDeleteUseCase"),
-  ProductRepositoryUpdate: Symbol.for("ProductRepositoryUpdate")
+  ProductRepositoryUpdate: Symbol.for("ProductRepositoryUpdate"),
+  DiscountCreateService: Symbol.for("DiscountCreateService"),
+  CreateDiscountRepository: Symbol.for("CreateDiscountRepository"),
+  ProductVariantUniquenessValidator: Symbol.for(
+    "ProductVariantUniquenessValidator"
+  ),
+   ConfirmationTokenService:Symbol.for("ConfirmationTokenService"),
+  IdGenerator:Symbol.for("IdGenerator"),
+
 };

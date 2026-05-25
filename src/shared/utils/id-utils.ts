@@ -25,7 +25,3 @@ export function toObjectId(id: string): Types.ObjectId {
 export function tryToObjectId(id: string): Types.ObjectId | null {
   return isValidObjectId(id) ? new Types.ObjectId(id) : null;
 }
-
-export function newHexStringId(){
-  return new Types.ObjectId().toHexString();
-}

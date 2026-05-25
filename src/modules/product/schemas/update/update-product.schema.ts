@@ -8,10 +8,10 @@ import { isValidObjectId } from "@/shared/utils";
 import { PRODUCT_LIMITS } from "../../constants/product-validation.constants";
 import {
   PriceSchema,
-  DiscountSchema,
+  // DiscountSchema,
   SeoMetaSchema,
   AttributeSchema,
-  VariantBaseSchema,
+  VariantDraftSchema,
   ProductImageSchema,
 } from "../shared.schema";
 import { VariantCreateCommandSchema } from "./update-product.command.schema";
@@ -21,7 +21,7 @@ import { VariantCreateCommandSchema } from "./update-product.command.schema";
 // ===============================
 
 const UpdatePriceSchema = PriceSchema.partial().strip();
-const UpdateDiscountSchema = DiscountSchema.partial().strip();
+// const UpdateDiscountSchema = DiscountSchema.partial().strip();
 const UpdateSeoMetaSchema = SeoMetaSchema.partial().strip();
 
 export const TempImageRefSchema = z.object({
@@ -40,7 +40,7 @@ const ImageOperationsSchema = z
 // DOMAIN UPDATE SCHEMAS (Clean Entity Updates)
 // ===============================
 // For creating new variants (no ID required)
-const VariantCreateSchema = VariantBaseSchema.extend({
+const VariantCreateSchema = VariantDraftSchema.extend({
   inventory: InventorySchema.optional(),
   images: z.array(TempImageRefSchema).optional(),
 }).strip();
@@ -56,7 +56,6 @@ export const VariantUpdateSchema = z
     images: ImageOperationsSchema.optional(), // Granular image operations for variants
   })
   .strip();
-
 
 const VariantOperationsSchema = z
   .object({
@@ -105,7 +104,7 @@ export const ProductDomainUpdateSchema = z
       .nullable()
       .optional(),
     price: UpdatePriceSchema.optional(),
-    discount: UpdateDiscountSchema.nullable().optional(),
+    // discount: UpdateDiscountSchema.nullable().optional(),
     isFeatured: z.boolean().nullable().optional(),
     seo: UpdateSeoMetaSchema.nullable().optional(),
     attributes: z
@@ -113,6 +112,7 @@ export const ProductDomainUpdateSchema = z
       .max(PRODUCT_LIMITS.ATTRIBUTES.MAX_COUNT)
       .nullable()
       .optional(),
+    productOptions: z.record(z.string()).optional(),
   })
   .strip();
 
@@ -263,8 +263,6 @@ export const UpdateProductRequestSchema = z
     }
   });
 
-
-
 // ===============================
 // EXPORTED TYPES
 // ===============================
@@ -276,7 +274,7 @@ export type ProductDomainUpdateType = z.infer<typeof ProductDomainUpdateSchema>;
 
 export type VariantOperationsType = z.infer<typeof VariantOperationsSchema>;
 export type UpdatePriceType = z.infer<typeof UpdatePriceSchema>;
-export type UpdateDiscountType = z.infer<typeof UpdateDiscountSchema>;
+// export type UpdateDiscountType = z.infer<typeof UpdateDiscountSchema>;
 export type UpdateSeoMetaType = z.infer<typeof UpdateSeoMetaSchema>;
 // Image operation types
 export type ImageOperationsType = z.infer<typeof ImageOperationsSchema>;
@@ -284,4 +282,3 @@ export type ImageOperationsType = z.infer<typeof ImageOperationsSchema>;
 // Variant operation types
 export type VariantCreateType = z.infer<typeof VariantCreateSchema>;
 export type VariantUpdateType = z.infer<typeof VariantUpdateSchema>;
-

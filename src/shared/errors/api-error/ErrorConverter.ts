@@ -1,3 +1,4 @@
+// shared/errors/api-error/error-converter.ts
 import { injectable } from "inversify";
 import { BaseError } from "../BaseError";
 import { ApiErrorContext } from "../error-context/api-error-context";
@@ -5,10 +6,12 @@ import { ValidationError } from "../ValidationError";
 import { ErrorDetectors } from "./ErrorDetectors";
 import { MongoErrorUtils } from "../MongoValidationError";
 import { ApiError } from "./ApiError";
-
+import { ERROR_MESSAGES, DERIVED_FIELD_MAPPINGS } from '@/constants/errors.constants';
 @injectable()
 export class ErrorConverter {
   
+
+
   /**
    * Converts raw errors to appropriate BaseError types
    */
@@ -48,35 +51,46 @@ export class ErrorConverter {
   }
 
   private handleMongoError(err: any, context: ApiErrorContext): BaseError {
-    let error: BaseError;
+  let error: BaseError;
 
-    if (MongoErrorUtils.isValidationError(err)) {
-      error = MongoErrorUtils.createValidationErrorFromMongoose(err);
-    } else if (MongoErrorUtils.isDuplicateKeyError(err)) {
-      const field = MongoErrorUtils.extractDuplicateField(err);
-      const customMessages: Record<string, string> = {
-        email: 'An account with this email already exists',
-        username: 'This username is already taken',
-        phone: 'This phone number is already registered'
-      };
-      error = MongoErrorUtils.createDuplicateKeyError(err, customMessages);
-    } else if (MongoErrorUtils.isCastError(err)) {
-      error = MongoErrorUtils.createCastError(err);
-    } else if (MongoErrorUtils.isConnectionError(err)) {
-      error = ApiError.serviceUnavailable('Database temporarily unavailable', 30, err);
-    } else {
-      error = ApiError.databaseError('database_operation', err);
-    }
-
-    error.setContext(context);
-    return error;
+  if (MongoErrorUtils.isValidationError(err)) {
+    error = MongoErrorUtils.createValidationErrorFromMongoose(err);
+  } else if (MongoErrorUtils.isDuplicateKeyError(err)) {
+    const dbField = MongoErrorUtils.extractDuplicateField(err);
+    const value = MongoErrorUtils.extractDuplicateValue(err);
+    
+    // Map derived fields to user-facing fields
+    const userFacingField = DERIVED_FIELD_MAPPINGS[dbField] || dbField;
+    
+    // Check the user-facing field
+    const message = ERROR_MESSAGES.DUPLICATE[userFacingField  as keyof typeof ERROR_MESSAGES.DUPLICATE] || 
+                    `${userFacingField} already exists`;
+    
+    error = MongoErrorUtils.createDuplicateKeyError(
+      err,
+      userFacingField,
+      message,
+      value
+    );
+  } else if (MongoErrorUtils.isCastError(err)) {
+    error = MongoErrorUtils.createCastError(err);
+  } else if (MongoErrorUtils.isConnectionError(err)) {
+    error = ApiError.serviceUnavailable('Database temporarily unavailable', 30, err);
+  } else {
+    error = ApiError.databaseError('database_operation', err);
   }
 
-   private handleJWTError(err: any, context: ApiErrorContext): ApiError {
+  error.setContext(context);
+  return error;
+}
+
+  private handleJWTError(err: any, context: ApiErrorContext): ApiError {
     const authError = ApiError.unauthorized('Invalid or expired token', { tokenError: err.name });
     authError.setContext(context);
     return authError;
-  }private handleMulterError(err: any, context: ApiErrorContext): ApiError {
+  }
+
+  private handleMulterError(err: any, context: ApiErrorContext): ApiError {
     let error: ApiError;
 
     switch (err.code) {
@@ -107,7 +121,7 @@ export class ErrorConverter {
     return error;
   }
 
-    private handleRateLimitError(err: any, context: ApiErrorContext): ApiError {
+  private handleRateLimitError(err: any, context: ApiErrorContext): ApiError {
     const rateLimitError = ApiError.tooManyRequests('Rate limit exceeded');
     rateLimitError.setContext(context);
     return rateLimitError;

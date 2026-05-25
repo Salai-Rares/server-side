@@ -1,7 +1,17 @@
 import { ValidationError } from "@/shared/errors/ValidationError";
-import { ProductImage, RatingSummary } from "../types";
+import {
+  ProductImage,
+  PublishedMetadataType,
+  RatingSummary,
+  VatRateType,
+} from "../types";
 import { AllUniqueKeyAndValuesFilters } from "../types/product-query-filter.types";
-import { ProductProps } from "./product.types";
+import {
+  ProductProps,
+  PublishedMetadataVO,
+  DeletedMetadataVO,
+  ArchivedMetadataVO,
+} from "./product.types";
 import { ProductDescriptionVO } from "./value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "./value-objects/description/short-description.value-object";
 import { DiscountVO } from "./value-objects/discount.value-object";
@@ -9,22 +19,23 @@ import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "./value-objects/sku.value-object";
 import { SlugVO } from "./value-objects/slug.value-object";
-import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusVO } from "@/core/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "./variant-product.entity";
 import {
   ProductDomainUpdateType,
-  UpdateDiscountType,
+  // UpdateDiscountType,
   UpdatePriceType,
   UpdateSeoMetaType,
   VariantUpdateType,
 } from "../schemas";
-import { newHexStringId } from "@/shared/utils";
+
 import { ProductVariantMapper } from "../mappers/domain/variant/variantDto-to-entity.mapper";
 import { ImageVO } from "./value-objects/image.value-object";
 import slugify from "slugify";
 import { ChangeTracker } from "@/shared/services/change-tracker";
 import { DataKeys } from "@/shared/types/data-keys-entities.types";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
+import { isValidObjectId } from "mongoose";
 type ReadonlyFields = "id" | "sku" | "createdAt" | "updatedAt";
 
 export type UpdateableProductFields = Exclude<
@@ -37,6 +48,7 @@ export class ProductEntity implements ProductProps {
     new ChangeTracker();
   private readonly _id: string;
   private readonly _sku: ProductSkuVO;
+  private _name: string;
   private _description?: ProductDescriptionVO;
   private _shortDescription?: ShortProductDescriptionVO;
   private _brand?: string;
@@ -44,7 +56,9 @@ export class ProductEntity implements ProductProps {
   private _tags?: string[];
   private _images?: ImageVO[];
   private _price?: PriceVO;
-  private _discount?: DiscountVO;
+  private _costPrice?: PriceVO;
+  private _vatRate?: VatRateType;
+  private _discount?: string;
   private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
   private _isFeatured?: boolean;
@@ -54,7 +68,13 @@ export class ProductEntity implements ProductProps {
   private _seo?: SeoMetaVO;
   private _attributes?: AllUniqueKeyAndValuesFilters;
   private _slug: SlugVO;
-  private _name: string;
+
+  private _productOptions?: ReadonlyMap<string, string>;
+  private _publishedMetaData?: PublishedMetadataVO;
+  private _deletedMetaData?: DeletedMetadataVO;
+  private _archivedMetaData?: ArchivedMetadataVO;
+
+  private readonly _createdBy?:string;
   private readonly _createdAt?: Date;
   private readonly _updatedAt?: Date;
   constructor(props: ProductProps) {
@@ -67,6 +87,7 @@ export class ProductEntity implements ProductProps {
     this._tags = props.tags;
     this._images = props.images;
     this._price = props.price;
+    // this._discount = props.discount;
     this._discount = props.discount;
     this._variants = props.variants;
     this._hasVariants = this.calculateHasVariants();
@@ -84,8 +105,24 @@ export class ProductEntity implements ProductProps {
     this.validate();
   }
   private validate(): void {
+    if (this._discount) {
+      if (!isValidObjectId(this._discount)) {
+        throw ValidationError.domainRule(
+          "discount",
+          "discount_id",
+          "Discount must be a uuid"
+        );
+      }
+    }
     if (this._variants && this._variants.length > 0) {
       this.validateVariantSkus(this._variants);
+    }
+    if (this._productOptions && this._productOptions.size <= 0) {
+      throw ValidationError.domainRule(
+        "productOptions",
+        "list_non_empty",
+        "Product options for main product can't be empty if it exists"
+      );
     }
   }
 
@@ -137,7 +174,14 @@ export class ProductEntity implements ProductProps {
   get price(): PriceVO | undefined {
     return this._price;
   }
-  get discount(): DiscountVO | undefined {
+  get costPrice(): PriceVO | undefined {
+    return this._costPrice;
+  }
+
+  get vatRate(): VatRateType | undefined {
+    return this._vatRate;
+  }
+  get discount(): string | undefined {
     return this._discount;
   }
   get hasVariants(): boolean {
@@ -170,6 +214,21 @@ export class ProductEntity implements ProductProps {
   }
   get name(): string {
     return this._name;
+  }
+  get productOptions(): ReadonlyMap<string, string> | undefined {
+    return this._productOptions;
+  }
+  get publishedMetaData() : PublishedMetadataVO | undefined {
+    return this._publishedMetaData;
+  }
+  get archivedMetaData() : ArchivedMetadataVO | undefined {
+    return this._archivedMetaData;
+  }
+  get deletedMetaData() : DeletedMetadataVO | undefined {
+    return this._deletedMetaData;
+  }
+  get createdBy() : string | undefined {
+    return this._createdBy
   }
   get createdAt(): Date | undefined {
     return this._createdAt;
@@ -219,6 +278,7 @@ export class ProductEntity implements ProductProps {
     this._shortDescription = new ShortProductDescriptionVO(newShortDescription);
     this.changeTracker.mark("shortDescription");
   }
+
   clearShortDescription(): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -232,7 +292,33 @@ export class ProductEntity implements ProductProps {
     this._shortDescription = undefined;
     this.changeTracker.mark("shortDescription");
   }
+  updateProductOptions(newOptions: Record<string, string>): void {
+    const newOptionsMap = new Map(Object.entries(newOptions));
 
+    if (newOptionsMap.size <= 0) {
+      throw ValidationError.domainRule(
+        "productOptions",
+        "empty_options",
+        "Product options cannot be empty",
+        this._id
+      );
+    }
+
+    this._productOptions = newOptionsMap;
+    this.changeTracker.mark("productOptions");
+  }
+  clearProductOptions(): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule(
+        "productOptions",
+        "immutable_when_deleted",
+        "Cannot clear product options of deleted product",
+        this._id
+      );
+    }
+    this._productOptions = undefined;
+    this.changeTracker.mark("productOptions");
+  }
   updateBrand(newBrand: string): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -360,76 +446,76 @@ export class ProductEntity implements ProductProps {
     this.changeTracker.mark("price");
   }
 
-  updateDiscount(discountUpdate: UpdateDiscountType): void {
-    if (this._status.isDeleted()) {
-      throw ValidationError.domainRule(
-        "discount",
-        "immutable_when_deleted",
-        "Cannot update discount of deleted product",
-        this._id
-      );
-    }
-    if (!this._price) {
-      throw ValidationError.domainRule(
-        "discount",
-        "missing_price",
-        "Cannot apply discount without a price",
-        this._id
-      );
-    }
-    // Use current values if not provided (for partial updates)
-    const newType = discountUpdate.type ?? this._discount?.type;
-    const newValue = discountUpdate.value ?? this._discount?.value;
-    const newValidUntil =
-      discountUpdate.validUntil ?? this._discount?.validUntil;
+  // updateDiscount(discountUpdate: UpdateDiscountType): void {
+  //   if (this._status.isDeleted()) {
+  //     throw ValidationError.domainRule(
+  //       "discount",
+  //       "immutable_when_deleted",
+  //       "Cannot update discount of deleted product",
+  //       this._id
+  //     );
+  //   }
+  //   if (!this._price) {
+  //     throw ValidationError.domainRule(
+  //       "discount",
+  //       "missing_price",
+  //       "Cannot apply discount without a price",
+  //       this._id
+  //     );
+  //   }
+  //   // Use current values if not provided (for partial updates)
+  //   const newType = discountUpdate.type ?? this._discount?.type;
+  //   const newValue = discountUpdate.value ?? this._discount?.value;
+  //   const newValidUntil =
+  //     discountUpdate.validUntil ?? this._discount?.validUntil;
 
-    // Ensure we have required fields for creating the VO
-    if (!newType || newValue === undefined) {
-      throw ValidationError.domainRule(
-        "discount",
-        "missing_required_fields",
-        "Discount type and value are required for update",
-        this._id
-      );
-    }
-    const newDiscount = new DiscountVO({
-      type: newType,
-      value: newValue,
-      validUntil: newValidUntil,
-    });
+  //   // Ensure we have required fields for creating the VO
+  //   if (!newType || newValue === undefined) {
+  //     throw ValidationError.domainRule(
+  //       "discount",
+  //       "missing_required_fields",
+  //       "Discount type and value are required for update",
+  //       this._id
+  //     );
+  //   }
+  //   const newDiscount = new DiscountVO({
+  //     type: newType,
+  //     value: newValue,
+  //     validUntil: newValidUntil,
+  //   });
 
-    // Business rule: Only validate fixed discounts against price
-    if (newDiscount.type === "fixed") {
-      if (newDiscount.value >= this._price.amount) {
-        throw ValidationError.domainRule(
-          "discount",
-          "fixed_discount_exceeds_price",
-          "Fixed discount cannot be equal to or greater than product price",
-          {
-            discountValue: newDiscount.value,
-            productPrice: this._price.amount,
-          }
-        );
-      }
-    }
+  //   // Business rule: Only validate fixed discounts against price
+  //   if (newDiscount.type === "fixed") {
+  //     if (newDiscount.value >= this._price.amount) {
+  //       throw ValidationError.domainRule(
+  //         "discount",
+  //         "fixed_discount_exceeds_price",
+  //         "Fixed discount cannot be equal to or greater than product price",
+  //         {
+  //           discountValue: newDiscount.value,
+  //           productPrice: this._price.amount,
+  //         }
+  //       );
+  //     }
+  //   }
 
-    this._discount = newDiscount;
-    this.changeTracker.mark("discount");
-  }
+  //   this._discount = newDiscount;
+  //   this.changeTracker.mark("discount");
+  // }
 
-  clearDiscount(): void {
-    if (this._status.isDeleted()) {
-      throw ValidationError.domainRule(
-        "discount",
-        "immutable_when_deleted",
-        "Cannot clear discount of deleted product",
-        this._id
-      );
-    }
+  // clearDiscount(): void {
+  //   if (this._status.isDeleted()) {
+  //     throw ValidationError.domainRule(
+  //       "discount",
+  //       "immutable_when_deleted",
+  //       "Cannot clear discount of deleted product",
+  //       this._id
+  //     );
+  //   }
 
-    this._discount = undefined;
-    this.changeTracker.mark("discount");
-  }
+  //   this._discount = undefined;
+  //   this.changeTracker.mark("discount");
+  // }
   updateFeatured(isFeatured: boolean): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -605,11 +691,6 @@ export class ProductEntity implements ProductProps {
       );
     }
 
-    // Set primary: only first image
-    for (let i = 0; i < reordered.length; i++) {
-      reordered[i].isPrimary = i === 0;
-    }
-
     this._images = reordered;
     this.changeTracker.mark("images");
   }
@@ -631,6 +712,13 @@ export class ProductEntity implements ProductProps {
       }
     }
 
+    if (updates.productOptions !== undefined) {
+      if (updates.productOptions === null) {
+        this.clearProductOptions();
+      } else {
+        this.updateProductOptions(updates.productOptions);
+      }
+    }
     if (updates.brand !== undefined) {
       if (updates.brand === null) {
         this.clearBrand();
@@ -651,13 +739,13 @@ export class ProductEntity implements ProductProps {
       this.updatePrice(updates.price);
     }
 
-    if (updates.discount !== undefined) {
-      if (updates.discount === null) {
-        this.clearDiscount();
-      } else {
-        this.updateDiscount(updates.discount);
-      }
-    }
+    // if (updates.discount !== undefined) {
+    //   if (updates.discount === null) {
+    //     this.clearDiscount();
+    //   } else {
+    //     this.updateDiscount(updates.discount);
+    //   }
+    // }
 
     if (updates.isFeatured !== undefined) {
       if (updates.isFeatured === null) {

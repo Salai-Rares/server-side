@@ -1,4 +1,4 @@
-import { EntityStatusType } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusType } from "@/core/domain/value-objects/status.value-objects";
 import { Types, Document } from "mongoose";
 
 export interface IInventoryBase {

@@ -1,0 +1,23 @@
+<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold">
+          Bine ai venit, {{firstName}}!
+        </mj-text>
+
+        <mj-text>
+          Pentru a-ți confirma contul, apasă pe butonul de mai jos.
+        </mj-text>
+
+        <mj-button href="{{confirmationUrl}}">
+          Confirmă emailul
+        </mj-button>
+
+        <mj-text font-size="13px" color="#666666">
+          Dacă nu ai creat acest cont, poți ignora acest email.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

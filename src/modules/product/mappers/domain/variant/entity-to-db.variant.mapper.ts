@@ -6,9 +6,13 @@ export class VariantEntityToDbMapper {
   static variantEntityToModel(variant: ProductVariantEntity): ProductVariant {
     return {
       _id: toObjectId(variant.id),
+      name: variant.name,
+      slug: variant.slug.value,
       sku: variant.sku.toString(),
-      productOptions: variant.productOptions as Readonly<Map<string, string>>,
+      productOptions: variant.productOptions,
       price: variant.price,
+
+      discount: variant.discount ? toObjectId(variant.discount) : undefined,
       images: variant.images?.map((image) => ({
         _id: toObjectId(image.id),
         ...image,

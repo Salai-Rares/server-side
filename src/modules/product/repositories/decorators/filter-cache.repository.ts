@@ -54,11 +54,11 @@ export class FilterCacheRepository implements IFilterCacheRepository {
       return []; // Return an empty array for clarity and consistency
     }
 
-    if ((await this.cache.exists(cacheKey)) == false) {
+    // if ((await this.cache.exists(cacheKey)) == false) {
       
-      await this.getUniqueFilters();
+    //   await this.getUniqueFilters();
 
-    }
+    // }
     const cached = await this.cache.getSelectedFiltersHash(cacheKey, list);
 
     if (isTruthy(cached)) {

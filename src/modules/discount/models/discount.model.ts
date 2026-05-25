@@ -4,7 +4,7 @@ import {
   IDiscountDocument,
 } from "../types/discount.types";
 import { any } from "zod";
-import { DiscountType } from "@/modules/product/schemas";
+// import { DiscountType } from "@/modules/product/schemas";
 
 const ConditionSchema = new Schema<DiscountConditionType>(
   {
@@ -12,6 +12,7 @@ const ConditionSchema = new Schema<DiscountConditionType>(
       type: String,
       enum: [
         "product",
+        "variant",
         "category",
         "tag",
         "cart_total",
@@ -24,7 +25,7 @@ const ConditionSchema = new Schema<DiscountConditionType>(
     operator: {
       type: String,
       enum: ["equals", "in", "greater_than", "less_than"],
-      required:true
+      required: true,
     },
   },
   { _id: false }
@@ -42,14 +43,12 @@ const DiscountSchema = new Schema<IDiscountDocument>({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   usageLimit: { type: Number },
-  usageCount: { type: Number, required: true,default:0 },
+  usageCount: { type: Number, required: true, default: 0 },
   active: { type: Boolean, default: false },
-  conditions: { type: [ConditionSchema] },
+  conditions: { type: [ConditionSchema], min: 1,required:true },
 });
 
-const DiscountModel: Model<IDiscountDocument> = mongoose.model<IDiscountDocument>(
-  "Discount",
-  DiscountSchema
-);
+const DiscountModel: Model<IDiscountDocument> =
+  mongoose.model<IDiscountDocument>("Discount", DiscountSchema);
 
 export default DiscountModel;

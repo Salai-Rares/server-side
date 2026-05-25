@@ -1,7 +1,7 @@
 export const PRODUCT_LIMITS = {
  NAME: {
    MIN_LENGTH: 5,
-   MAX_LENGTH: 100,
+   MAX_LENGTH: 50,
  },
  DESCRIPTION: {
    MIN_LENGTH: 0,
@@ -12,8 +12,8 @@ export const PRODUCT_LIMITS = {
    MAX_LENGTH: 300,
  },
  SKU: {
-   MIN_LENGTH: 3,
-   MAX_LENGTH: 50,
+   MIN_LENGTH: 6,
+   MAX_LENGTH: 26,
  },
  PRICE: {
    MIN_AMOUNT: 0,
@@ -33,7 +33,7 @@ export const PRODUCT_LIMITS = {
    MAX_COUNT: 3,
  },
  TAGS: {
-   MAX_COUNT: 30,
+   MAX_COUNT: 5,
    TAG_MAX_LENGTH: 50,
  },
  VARIANTS: {

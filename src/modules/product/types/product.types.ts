@@ -1,7 +1,7 @@
 import { SeoMeta, ImageMeta } from "@/shared/types";
 import mongoose, { Types, Document, LeanDocument } from "mongoose";
 import { AllUniqueKeyAndValuesFilters } from "./product-query-filter.types";
-import { EntityStatusType } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusType } from "@/core/domain/value-objects/status.value-objects";
 
 // Define an interface that describes the shape of a Product document
 export interface IProductBase {
@@ -20,8 +20,10 @@ export interface IProductBase {
 
   images?: ProductImage[];
   price?: PriceType;
-  discount?: DiscountType;
-  //variants.productOptions will be added to the list of attributes
+  costPrice?: PriceType;
+  vatRate?: 5 | 9 | 21;
+  discount?: Types.ObjectId;
+  productOptions?: ReadonlyMap<string, string>;
   hasVariants: boolean;
   variants?: ProductVariant[]; // color/size options
 
@@ -34,6 +36,11 @@ export interface IProductBase {
   seo?: SeoMeta;
 
   attributes?: AllUniqueKeyAndValuesFilters;
+  publishedMetaData?: PublishedMetadataType;
+  archivedMetaData?: ArchivedMetadataType;
+  deletedMetaData?: DeletedMetadataType;
+  //this should be enforced once we have user functionality because all products are created by a user so remove the optional '?'
+  createdBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,7 +52,20 @@ export interface IProductDocument extends Document, IProductBase {}
 export type IProductLean = LeanDocument<IProduct>;
 export interface ProductImage extends ImageMeta {
   _id: Types.ObjectId;
-  isPrimary: boolean;
+}
+export interface PublishedMetadataType {
+  publishedAt: Date;
+  publishedBy: Types.ObjectId;
+}
+
+export interface ArchivedMetadataType {
+  archivedAt: Date;
+  archivedBy: Types.ObjectId;
+}
+
+export interface DeletedMetadataType {
+  deletedAt: Date;
+  deletedBy: Types.ObjectId;
 }
 
 export interface PriceType {
@@ -53,18 +73,23 @@ export interface PriceType {
   amount: number; // base price
 }
 
-export interface DiscountType {
-  type: "percentage" | "fixed";
-  value: number;
-  validUntil?: Date;
-}
+// export interface DiscountType {
+//   type: "percentage" | "fixed";
+//   value: number;
+//   validUntil?: Date;
+// }
 
 export interface ProductVariant {
   _id: Types.ObjectId;
+  name: string;
+  slug: string;
   sku: string;
-  productOptions: Map<string, string>; // e.g., { color: 'red', size: 'M' }
+  productOptions?: ReadonlyMap<string, string>; // e.g., { color: 'red', size: 'M' }
   price?: PriceType; // optional override
+  costPrice?: PriceType;
+  vatRate?: 5 | 9 | 21;
   images?: ProductImage[];
+  discount?: Types.ObjectId;
 }
 
 export interface RatingSummary {
@@ -87,3 +112,5 @@ export interface RatingSummary {
     5: number;
   };
 }
+
+export type VatRateType = 5 | 9 | 21;

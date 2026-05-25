@@ -3,7 +3,7 @@ import { IProductCreateService } from "../types";
 import { IProductRepositoryWrite } from "../types/create/product-write.repository.types";
 import { TYPES } from "@/shared/types";
 
-import { newHexStringId } from "@/shared/utils";
+
 import { ProductDtoToEntityMapper } from "../mappers/domain/dto-to-entity.mapper";
 import { ProductProps } from "../domain/product.types";
 import { ProductVariantEntity } from "../domain/variant-product.entity";
@@ -22,6 +22,13 @@ import { CreateProductType } from "../schemas";
 import { CreateInventoryType } from "@/modules/inventory/schemas/create-inventory.dto";
 import { IInventoryServiceCreate } from "@/modules/inventory/types/create/inventory-create.service.types";
 import { ImageVO } from "../domain/value-objects/image.value-object";
+import { DiscountZodType } from "@/modules/discount/schemas/discount.schema";
+import { DiscountProps } from "@/modules/discount/domain/discount-domain.types";
+import { DiscountDtoToEntity } from "@/modules/discount/domain/mappers/dto-to-entity.discount.mapper";
+import { DiscountEntity } from "@/modules/discount/domain/discount.entity";
+import { CreateDiscountService } from "@/modules/discount/services/discount-create.service";
+import { ProductVariantUniquenessValidator } from "../validators/product-variant-uniqueness.validator";
+import { IIdGenerator } from "@/core/application/ports/id/id-generator.interface";
 
 @injectable()
 export class ProductCreateUseCase implements IProductCreateService {
@@ -30,7 +37,13 @@ export class ProductCreateUseCase implements IProductCreateService {
     private productRepository: IProductRepositoryWrite,
     @inject(TYPES.InventoryCreateUseCase)
     private inventoryService: IInventoryServiceCreate,
-    @inject(TYPES.Logger) private logger: ILogger
+    @inject(TYPES.DiscountCreateService)
+    private discountCreateService : CreateDiscountService,
+    @inject(TYPES.Logger) private logger: ILogger,
+    @inject(TYPES.ProductVariantUniquenessValidator) // 👈 Inject validator
+    private variantValidator: ProductVariantUniquenessValidator,
+    @inject(TYPES.IdGenerator) 
+    private idGenerator:IIdGenerator
   ) {}
 
   /**
@@ -42,16 +55,16 @@ export class ProductCreateUseCase implements IProductCreateService {
    */
   async createProductWithInventories(
     dto: CreateProductType
-  ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }> {
+  ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] ; discounts? : DiscountEntity[] }> {
     const session = await mongoose.startSession();
     let result:
-      | { product: ProductEntity; inventories?: InventoryEntity[] }
+      | { product: ProductEntity; inventories?: InventoryEntity[] ;discounts?:DiscountEntity[]}
       | undefined;
 
     try {
       await session.withTransaction(async () => {
         // 1. Prepare IDs and validate
-        const productId = newHexStringId();
+        const productId = this.idGenerator.generate();
         const hasVariants = Boolean(dto.variants?.length);
 
         if (hasVariants && dto.inventory) {
@@ -65,7 +78,7 @@ export class ProductCreateUseCase implements IProductCreateService {
         let images: ImageVO[] | undefined;
 
         images = dto.images?.map((image) => {
-          const id = newHexStringId();
+          const id = this.idGenerator.generate();
           return {
             id,
             ...image,
@@ -75,12 +88,12 @@ export class ProductCreateUseCase implements IProductCreateService {
         // 2. Process variants and prepare inventory requests
         let variants: ProductVariantEntity[] | undefined;
         let inventoryRequests: CreateInventoryType[] = [];
-
+        let discounts: DiscountProps[] = [];
         if (hasVariants && dto.variants) {
           variants = dto.variants.map((v) => {
             let variantImages: ImageVO[] | undefined;
-            const variantId = newHexStringId();
-
+            const variantId = this.idGenerator.generate();
+            let discountId: string | undefined;
             // Add inventory request for variant if provided
             if (v.inventory) {
               inventoryRequests.push({
@@ -90,15 +103,26 @@ export class ProductCreateUseCase implements IProductCreateService {
                 warehouseLocation: v.inventory.warehouseLocation,
               });
             }
-
+            if (v.discountData) {
+              discountId = this.idGenerator.generate();
+              const d = v.discountData;
+              discounts.push({
+                id: discountId,
+                ...DiscountDtoToEntity.toEntity(d, v.name, [
+                  { type: "product", operator: "equals", value: productId },
+                  { type: "variant", operator: "equals", value: variantId },
+                ]),
+              });
+            }
             variantImages = v.images?.map((image) => ({
-              id: newHexStringId(),
+              id: this.idGenerator.generate(),
               ...image,
             }));
-
             return new ProductVariantEntity({
               id: variantId,
               images: variantImages,
+              discount: discountId,
+              slug: SlugVO.fromName(v.name),
               ...ProductVariantMapper.toDomain(
                 ProductVariantMapper.extractBaseProperties(v)
               ),
@@ -112,7 +136,17 @@ export class ProductCreateUseCase implements IProductCreateService {
             warehouseLocation: dto.inventory.warehouseLocation,
           });
         }
-
+        const discountProductId = dto.discountData
+          ? this.idGenerator.generate()
+          : undefined;
+        if (dto.discountData && discountProductId) {
+          discounts.push({
+            id: discountProductId,
+            ...DiscountDtoToEntity.toEntity(dto.discountData, dto.name, [
+              { type: "product", operator: "equals", value: productId },
+            ]),
+          });
+        }
         // 3. Create and save product
         const product = new ProductEntity({
           id: productId,
@@ -120,8 +154,10 @@ export class ProductCreateUseCase implements IProductCreateService {
           images,
           slug: SlugVO.fromName(dto.name),
           variants,
+          discount: discountProductId,
         });
-
+        // 🎯 4. VALIDATE VARIANT UNIQUENESS (before saving)
+        await this.variantValidator.validate(product, { session });
         const savedProduct = await this.productRepository.saveProduct(product, {
           session,
         });
@@ -142,11 +178,16 @@ export class ProductCreateUseCase implements IProductCreateService {
                   { session }
                 );
         }
+        let savedDiscounts: DiscountEntity[] | undefined;
+        if (discounts.length > 0) {
+          savedDiscounts = await this.discountCreateService.saveBulkDiscounts(discounts,{session});
+        }
 
         // Store result outside the transaction
         result = {
           product: savedProduct,
           inventories: savedInventories,
+          discounts : savedDiscounts
         };
       });
 

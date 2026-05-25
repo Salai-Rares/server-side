@@ -75,16 +75,15 @@ export class MongoErrorUtils {
     );
   }
 
-  static createDuplicateKeyError(error: any, customMessages?: Record<string, string>): ValidationError {
+   static createDuplicateKeyError(
+    error: any,
+    field: string,
+    message: string,
+    value?: any
+  ): ValidationError {
     if (!this.isDuplicateKeyError(error)) {
       throw new Error('Not a duplicate key error');
     }
-
-    const field = this.extractDuplicateField(error);
-    const value = this.extractDuplicateValue(error);
-    
-    // Use custom message if provided
-    const message = customMessages?.[field] || `${field} already exists`;
 
     return new ValidationError(
       'Duplicate value found',

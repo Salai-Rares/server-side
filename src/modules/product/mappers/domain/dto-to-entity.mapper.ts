@@ -5,7 +5,7 @@ import { DiscountVO } from "../../domain/value-objects/discount.value-object";
 import { PriceVO } from "../../domain/value-objects/price.value-object";
 import { SeoMetaVO } from "../../domain/value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "../../domain/value-objects/sku.value-object";
-import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusVO } from "@/core/domain/value-objects/status.value-objects";
 import { ProductVariantEntity } from "../../domain/variant-product.entity";
 import { CreateProductType } from "../../schemas/create-product.schema";
 
@@ -18,29 +18,38 @@ export class ProductDtoToEntityMapper {
     */
   static mapToEntity(
     dto: CreateProductType
-  ): Omit<ProductProps, "id" | "variants" | "hasVariants" | "slug" | "images"> {
+  ): Omit<
+    ProductProps,
+    "id" | "variants" | "hasVariants" | "slug" | "images" | "discount"
+  > {
     return {
       sku: new ProductSkuVO(dto.sku),
 
-      description: dto.description ? new ProductDescriptionVO(dto.description) : undefined,
+      description: dto.description
+        ? new ProductDescriptionVO(dto.description)
+        : undefined,
       shortDescription: dto.shortDescription
         ? new ShortProductDescriptionVO(dto.shortDescription)
+        : undefined,
+      productOptions: dto.productOptions
+        ? new Map(Object.entries(dto.productOptions))
         : undefined,
       brand: dto.brand,
       categories: dto.categories,
       tags: dto.tags,
-      price: dto.price? new PriceVO({
-        currency: dto.price.currency,
-        amount: dto.price.amount,
-      }) : undefined,
-      discount: dto.discount
-        ? new DiscountVO({
-            type: dto.discount.type,
-            value: dto.discount.value,
-            validUntil: dto.discount.validUntil,
+      price: dto.price
+        ? new PriceVO({
+            currency: dto.price.currency,
+            amount: dto.price.amount,
           })
         : undefined,
-
+      costPrice : dto.costPrice
+        ? new PriceVO({
+            currency: dto.costPrice.currency,
+            amount: dto.costPrice.amount,
+          })
+        : undefined,
+      vatRate : dto.vatRate,
       isFeatured: dto.isFeatured ?? false,
       status: EntityStatusVO.draft(),
       ratings: dto.ratings,

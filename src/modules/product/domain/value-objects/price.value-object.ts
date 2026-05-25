@@ -1,5 +1,5 @@
 import { ValidationError, ValidationField } from "@/shared/errors/ValidationError";
-import { DiscountType, PriceType } from "../../types";
+import {  PriceType } from "../../types";
 import { DiscountVO } from "./discount.value-object";
 export class PriceVO {
   private readonly _amount: number;

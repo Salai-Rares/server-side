@@ -9,8 +9,9 @@ import { ClientSession } from "mongoose";
 import { IProductReadService } from "@/modules/product/types/read/read-product.service.types";
 import { ProductEntity } from "@/modules/product/domain/product.entity";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
-import { newHexStringId } from "@/shared/utils";
+
 import { InventoryDtoToEntityMapper } from "../mappers/domain/dto-to-entity.mapper";
+import { IIdGenerator } from "@/core/application/ports/id/id-generator.interface";
 
 @injectable()
 export class InventoryCreateUseCase implements IInventoryServiceCreate {
@@ -20,7 +21,9 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
     @inject(TYPES.InventoryReadUseCase)
     private inventoryReadService: IInventoryServiceRead,
     @inject(TYPES.InventoryRepositoryWrite)
-    private inventoryRepositoryWrite: IInventoryRepositoryWrite
+    private inventoryRepositoryWrite: IInventoryRepositoryWrite,
+    @inject(TYPES.IdGenerator) 
+    private idGenerator:IIdGenerator
   ) {}
 
  async saveInventoryForKnownProduct(
@@ -36,7 +39,7 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
   this.commonValidationSaveInventory(inventory, allInventories, product);
 
   const inventoryEntity = new InventoryEntity({
-    id: newHexStringId(),
+    id: this.idGenerator.generate(),
     ...InventoryDtoToEntityMapper.mapToEntity(inventory),
   });
 
@@ -102,7 +105,7 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
       );
     this.commonValidationSaveInventory(inventory, allInventories, product);
     const inventoryEntity = new InventoryEntity({
-      id: newHexStringId(),
+      id: this.idGenerator.generate(),
       ...InventoryDtoToEntityMapper.mapToEntity(inventory),
     });
     return await this.inventoryRepositoryWrite.saveInventory(
@@ -137,7 +140,7 @@ export class InventoryCreateUseCase implements IInventoryServiceCreate {
     const inventoryEntities = inventories.map(
       (inventory) =>
         new InventoryEntity({
-          id: newHexStringId(),
+          id: this.idGenerator.generate(),
           ...InventoryDtoToEntityMapper.mapToEntity(inventory),
         })
     );

@@ -1,5 +1,10 @@
 // src/shared/utils/retry.ts
 import { MongoServerError } from "mongodb";
+export function backoffMs(retryCount: number): number {
+  const base = 2_000;
+  const cap = 5 * 60_000;
+  return Math.min(base * 2 ** Math.max(0, retryCount - 1), cap);
+}
 
 export async function withRetry<T>(
   operation: () => Promise<T>,

@@ -1,4 +1,4 @@
-import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusVO } from "@/core/domain/value-objects/status.value-objects";
 import { InventoryEntity } from "../../domain/inventory.entity";
 import { IInventoryDocument } from "../../types";
 

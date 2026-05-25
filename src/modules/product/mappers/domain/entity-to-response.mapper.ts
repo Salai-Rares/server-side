@@ -10,6 +10,7 @@ export class ProductEntityToResponseDtoMapper {
       sku: entity.sku.value,
       description: entity.description?.toString() ?? null,
       shortDescription: entity.shortDescription?.toString() ?? null, // Optional
+      productOptions: entity.productOptions ?? null,
       brand: entity.brand ?? null, // Optional ObjectId
       categories: entity.categories, // Required array
       tags: entity.tags ?? [],
@@ -19,7 +20,6 @@ export class ProductEntityToResponseDtoMapper {
           id: img.id,
           url: img.url,
           alt: img.alt,
-          isPrimary: img.isPrimary,
         })) ?? [],
 
       price: entity.price
@@ -28,15 +28,21 @@ export class ProductEntityToResponseDtoMapper {
             currency: entity.price.currency,
           }
         : null,
-
-      discount: entity.discount
+      costPrice: entity.costPrice
         ? {
-            type: entity.discount.type,
-            value: entity.discount.value,
-            validUntil: entity.discount.validUntil?.toISOString() ?? null,
+            amount: entity.costPrice.amount,
+            currency: entity.costPrice.currency,
           }
-        : null, // Optional object
-
+        : null,
+      vatRate: entity.vatRate ?? null,
+      // discount: entity.discount
+      //   ? {
+      //       type: entity.discount.type,
+      //       value: entity.discount.value,
+      //       validUntil: entity.discount.validUntil?.toISOString() ?? null,
+      //     }
+      //   : null, // Optional object
+      discount: entity.discount ?? null,
       hasVariants: entity.hasVariants, // Required boolean
 
       variants:
@@ -67,6 +73,25 @@ export class ProductEntityToResponseDtoMapper {
 
       attributes: entity.attributes ?? null, // Optional object
 
+      publishedMetaData: entity.publishedMetaData
+        ? {
+            publishedAt: entity.publishedMetaData.publishedAt,
+            publishedBy: entity.publishedMetaData.publishedBy,
+          }
+        : undefined,
+      deletedMetaData: entity.deletedMetaData
+        ? {
+            deletedAt: entity.deletedMetaData.deletedAt,
+            deletedBy: entity.deletedMetaData.deletedBy,
+          }
+        : undefined,
+      archivedMetaData: entity.archivedMetaData
+        ? {
+            archivedAt: entity.archivedMetaData.archivedAt,
+            archivedBy: entity.archivedMetaData.archivedBy,
+          }
+        : undefined,
+      creatadBy: entity.createdBy ?? null,
       createdAt: entity.createdAt?.toISOString() ?? null,
       updatedAt: entity.updatedAt?.toISOString() ?? null,
     };

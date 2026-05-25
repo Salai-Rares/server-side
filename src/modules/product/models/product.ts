@@ -3,18 +3,18 @@ import mongoose, { Document, Schema, Model, Types } from "mongoose";
 import { SeoMetaSchema } from "../../../shared/models";
 
 import {
-  DiscountType,
+  ArchivedMetadataType,
+  DeletedMetadataType,
+  // DiscountType,
   IProduct,
   IProductDocument,
   PriceType,
   ProductImage,
   ProductVariant,
+  PublishedMetadataType,
   RatingSummary,
 } from "../types";
-import {
-  validateAttributesSize,
-
-} from "../validators";
+import { validateAttributesSize } from "../validators";
 import {
   AllUniqueKeyAndValuesFilters,
   Filter,
@@ -22,13 +22,10 @@ import {
 import { boolean } from "zod";
 import { PRODUCT_LIMITS } from "../constants/product-validation.constants";
 
-const ProductImageSchema = new Schema<ProductImage>(
-  {
-    url: { type: String, required: true },
-    alt: { type: String },
-    isPrimary: { type: Boolean, default: false },
-  },
-);
+const ProductImageSchema = new Schema<ProductImage>({
+  url: { type: String, required: true },
+  alt: { type: String, required: true },
+});
 
 const PriceSchema = new Schema<PriceType>(
   {
@@ -38,16 +35,14 @@ const PriceSchema = new Schema<PriceType>(
   { _id: false }
 );
 
-const DiscountSchema = new Schema<DiscountType>(
-  {
-    type: { type: String, enum: ["percentage", "fixed"], required: true },
-    value: { type: Number, required: true },
-    validUntil: { type: Date },
-  },
-  { _id: false }
-);
-
 const VariantSchema = new Schema<ProductVariant>({
+  name: {
+    type: String,
+    required: true,
+    minlength: PRODUCT_LIMITS.NAME.MIN_LENGTH,
+    maxlength: PRODUCT_LIMITS.NAME.MAX_LENGTH,
+  },
+  slug: { type: String, required: true },
   sku: {
     type: String,
     required: true,
@@ -59,9 +54,14 @@ const VariantSchema = new Schema<ProductVariant>({
       message: "Invalid SKU format",
     },
   },
-  productOptions: { type: Map, of: String, required: true },
+  productOptions: { type: Map, of: String },
   price: { type: PriceSchema },
-
+  costPrice: { type: PriceSchema },
+  vatRate: {
+    type: Number,
+    enum: [5, 9, 21],
+  },
+  discount: { type: Types.ObjectId, ref: "Discount" },
   images: { type: [ProductImageSchema] },
 });
 
@@ -81,7 +81,33 @@ const AttributeSchema = new Schema<Filter>(
   },
   { _id: false }
 );
+const PublishedMetadataSchema = new Schema<PublishedMetadataType>(
+  {
+    publishedAt: { type: Date, required: true },
+    //here change on required : true when user functionality is added
+    publishedBy: { type: Schema.Types.ObjectId, required: false },
+  },
+  { _id: false }
+);
+const ArchivedMetadataSchema = new Schema<ArchivedMetadataType>(
+  {
+    archivedAt: { type: Date, required: true },
+    //here change on required : true when user functionality is added
+    archivedBy: { type: Schema.Types.ObjectId, required: false },
+  },
+  { _id: false }
+);
 
+const DeletedMetadataSchema = new Schema<DeletedMetadataType>(
+  {
+    deletedAt: { type: Date, required: true },
+    //here change on required : true when user functionality is added
+    deletedBy: { type: Schema.Types.ObjectId, required: false },
+  },
+  {
+    _id: false,
+  }
+);
 //Main schema
 const ProductSchema = new Schema<IProductDocument>(
   {
@@ -99,21 +125,24 @@ const ProductSchema = new Schema<IProductDocument>(
         message: "Invalid SKU format",
       },
     },
-    description: { type: String},
+    description: { type: String },
     shortDescription: { type: String },
 
     brand: { type: Types.ObjectId, ref: "Brand" },
-    categories: [{ type: Types.ObjectId, ref: "Category"}],
+    categories: [{ type: Types.ObjectId, ref: "Category" }],
     //used for visual
     tags: {
       type: [String],
-      required: true,
-      default: [],
     },
 
-    images: { type: [ProductImageSchema]},
+    images: { type: [ProductImageSchema] },
     price: { type: PriceSchema },
-    discount: { type: DiscountSchema },
+    costPrice: { type: PriceSchema },
+    vatRate: {
+      type: Number,
+      enum: [5, 9, 21],
+    },
+    discount: { type: Types.ObjectId, ref: "Discount" },
     hasVariants: { type: Boolean, default: false },
     variants: { type: [VariantSchema], default: [] },
 
@@ -121,7 +150,7 @@ const ProductSchema = new Schema<IProductDocument>(
     status: {
       type: String,
       enum: PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES,
-      default:PRODUCT_LIMITS.STATUS.DEFAULT_VALUE,
+      default: PRODUCT_LIMITS.STATUS.DEFAULT_VALUE,
       required: true,
     },
 
@@ -137,7 +166,12 @@ const ProductSchema = new Schema<IProductDocument>(
 
     seo: { type: SeoMetaSchema },
 
-    attributes: { type: [AttributeSchema],  default: [] },
+    attributes: { type: [AttributeSchema], default: [] },
+    productOptions: { type: Map, of: String },
+    publishedMetaData: { type: PublishedMetadataSchema },
+    archivedMetaData: { type: ArchivedMetadataSchema },
+    deletedMetaData: { type: DeletedMetadataSchema },
+    createdBy : {type : Schema.Types.ObjectId}
   },
   {
     timestamps: true,
@@ -147,9 +181,6 @@ const ProductSchema = new Schema<IProductDocument>(
 );
 
 ProductSchema.path("attributes").validate(validateAttributesSize);
-
-
-
 
 const Product: Model<IProductDocument> = mongoose.model<IProductDocument>(
   "Product",

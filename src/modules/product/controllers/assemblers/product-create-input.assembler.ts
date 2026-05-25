@@ -2,24 +2,28 @@ import { CreateProductType, CreateProductSchema, ProductImageType } from "../../
 
 
 export class ProductCreateInputAssembler {
-  static assemble(
-    body: any,
-    files: Express.Multer.File[]
-  ): CreateProductType {
-    const processed = this.processUploadedProductImages(files, body);
+static assemble(
+  body: any,
+  files: Express.Multer.File[]
+): CreateProductType {
+  // Parse the JSON string BEFORE passing to Zod
+  const productData = JSON.parse(body.product); // ← ADD THIS
+  
+  const processed = this.processUploadedProductImages(files, body);
 
-    if (processed.productImages) {
-      body.product.images = processed.productImages;
-    }
-
-    if (processed.variantImages && body.product.variants) {
-      Object.entries(processed.variantImages).forEach(([index, images]) => {
-        body.product.variants[+index].images = images;
-      });
-    }
-
-    return CreateProductSchema.parse(body.product);
+  if (processed.productImages) {
+    productData.images = processed.productImages;
   }
+
+  if (processed.variantImages && productData.variants) {
+    Object.entries(processed.variantImages).forEach(([index, images]) => {
+      productData.variants[+index].images = images;
+    });
+  }
+
+  // Now Zod receives an object, not a string
+  return CreateProductSchema.parse(productData); // ← Changed
+}
 
   private static processUploadedProductImages(
     files: Express.Multer.File[],
@@ -40,11 +44,10 @@ export class ProductCreateInputAssembler {
     } = {};
 
     if (fileGroups.images) {
-      const primaryIndex = Number(body.primaryImageIndex || 0);
+     
       processed.productImages = fileGroups.images.map((file, index) => ({
         url: `/images/products/${file.filename}`,
         alt: file.filename,
-        isPrimary: index === primaryIndex,
       }));
     }
 
@@ -52,16 +55,11 @@ export class ProductCreateInputAssembler {
       const match = fieldName.match(/variantImages\[(\d+)\]/);
       if (match) {
         const variantIndex = parseInt(match[1]);
-        const variantPrimary = Array.isArray(body.variantPrimary)
-          ? Number(body.variantPrimary[variantIndex] || 0)
-          : 0;
-
         if (!processed.variantImages) processed.variantImages = {};
         processed.variantImages[variantIndex] = fileGroups[fieldName].map(
           (file, index) => ({
             url: `/images/products/${file.filename}`,
             alt: file.filename,
-            isPrimary: index === variantPrimary,
           })
         );
       }

@@ -2,7 +2,7 @@ import { ValidationError } from "@/shared/errors/ValidationError";
 import { UpdateableInventoryType } from "../schemas/inventory.dto";
 import { InventoryProps } from "./inventory.types";
 import { ChangeTracker } from "@/shared/services/change-tracker";
-import { EntityStatusVO } from "@/modules/shared/domain/value-objects/status.value-objects";
+import { EntityStatusVO } from "@/core/domain/value-objects/status.value-objects";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { DataKeys } from "@/shared/types/data-keys-entities.types";
 

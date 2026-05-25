@@ -45,7 +45,7 @@ export const ERROR_MESSAGES = {
   },
   
   EMAIL: {
-    INVALID: "Please enter a valid email address",
+    INVALID: "Introduceți o adresă de email validă",
     ALREADY_EXISTS: "Email address is already registered",
     NOT_FOUND: "No account found with this email address",
     VERIFICATION_REQUIRED: "Please verify your email address",
@@ -107,8 +107,29 @@ export const ERROR_MESSAGES = {
     REFUND_FAILED: "Refund processing failed",
   },
 
-} as const;
+  // ============= DATABASE DUPLICATE KEY MESSAGES =============
+  DUPLICATE: {
+    // Product domain
+    name: 'A product with this name already exists',
+    sku: 'This SKU is already in use',
+    
+    // User domain
+    email: 'An account with this email already exists',
+    username: 'This username is already taken',
+    phone: 'This phone number is already registered',
+    
+    // Add more as needed
+  },
 
+} as const;
+export const DERIVED_FIELD_MAPPINGS: Record<string, string> = {
+  // Product domain
+  slug: 'name',  // slug is auto-generated from name
+  
+  // Add more derived fields as needed
+  // handle: 'username',
+  // permalink: 'url',
+} as const;
 // ============= ENHANCED HTTP STATUS CODES =============
 
 export enum HttpStatus {

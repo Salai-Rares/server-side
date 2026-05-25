@@ -6,6 +6,7 @@ import {
 import { IProduct } from "../../types";
 import { id } from "inversify";
 import { VariantEntityToDbMapper } from "./variant/entity-to-db.variant.mapper";
+import { E } from "@faker-js/faker/dist/airline-BUL6NtOJ";
 
 export class ProductEntityToPersistanceMapper {
   static mapToPersistence(
@@ -18,6 +19,7 @@ export class ProductEntityToPersistanceMapper {
       slug: entity.slug.value,
       description: entity.description?.toString(),
       shortDescription: entity.shortDescription?.toString(),
+      productOptions: entity.productOptions,
       brand: entity.brand ? toObjectId(entity.brand) : undefined,
       categories: entity.categories?.map((id) => toObjectId(id)),
       tags: entity.tags,
@@ -26,11 +28,19 @@ export class ProductEntityToPersistanceMapper {
         _id: toObjectId(image.id),
         id: undefined,
       })),
-      price:  entity.price? {
-        amount: entity.price.amount,
-        currency: entity.price.currency,
-      }:undefined,
-      discount: entity.discount,
+      price: entity.price
+        ? {
+            amount: entity.price.amount,
+            currency: entity.price.currency,
+          }
+        : undefined,
+      costPrice: entity.costPrice
+        ? {
+            amount: entity.costPrice.amount,
+            currency: entity.costPrice.currency,
+          }
+        : undefined,
+      discount: entity.discount ? toObjectId(entity.discount) : undefined,
       hasVariants: entity.hasVariants,
       variants: entity.variants?.map(
         VariantEntityToDbMapper.variantEntityToModel
@@ -48,6 +58,25 @@ export class ProductEntityToPersistanceMapper {
           }
         : undefined,
       attributes: entity.attributes,
+      createdBy: entity.createdBy ? toObjectId(entity.createdBy) : undefined,
+      publishedMetaData: entity.publishedMetaData
+        ? {
+            publishedAt: entity.publishedMetaData.publishedAt,
+            publishedBy: toObjectId(entity.publishedMetaData.publishedBy),
+          }
+        : undefined,
+      deletedMetaData: entity.deletedMetaData
+        ? {
+            deletedAt: entity.deletedMetaData.deletedAt,
+            deletedBy: toObjectId(entity.deletedMetaData.deletedBy),
+          }
+        : undefined,
+      archivedMetaData: entity.archivedMetaData
+        ? {
+            archivedAt: entity.archivedMetaData.archivedAt,
+            archivedBy: toObjectId(entity.archivedMetaData.archivedBy),
+          }
+        : undefined,
     };
   }
   static mapPartialToPersistence(
