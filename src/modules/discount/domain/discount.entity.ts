@@ -1,4 +1,4 @@
-import { DiscountProps } from "./discount-domain.types";
+import { BuyXGetYValue, DiscountProps } from "./discount-domain.types";
 import { DiscountConditionType } from "../types/discount.types";
 import { ValidationError } from "@/shared/errors/ValidationError";
 import { ChangeTracker } from "@/shared/services/change-tracker";
@@ -34,7 +34,7 @@ export class DiscountEntity implements DiscountProps {
   private _name: string;
   private _description?: string;
   private _type: "percentage" | "fixed_amount" | "buy_x_get_y";
-  private _value: number;
+  private _value: number | BuyXGetYValue;
   private _startDate: Date;
   private _endDate: Date;
   private _usageLimit?: number;
@@ -71,8 +71,28 @@ export class DiscountEntity implements DiscountProps {
     throw ValidationError.domainRule("name", "name_length", "Discount name must be at least 5 chars", this._id);
   }
 
-  if (this._value < 0) {
-    throw ValidationError.domainRule("value", "value_positive", "Discount value must be positive", this._id);
+  if (this._type === "buy_x_get_y") {
+    const v = this._value as BuyXGetYValue;
+    if (!v || typeof v !== "object") {
+      throw ValidationError.domainRule("value", "invalid_buy_x_get_y", "buy_x_get_y requires an object value", this._id);
+    }
+    if (!Number.isInteger(v.buyQuantity) || v.buyQuantity < 1) {
+      throw ValidationError.domainRule("value.buyQuantity", "invalid_quantity", "buyQuantity must be a positive integer", this._id);
+    }
+    if (!Number.isInteger(v.getQuantity) || v.getQuantity < 1) {
+      throw ValidationError.domainRule("value.getQuantity", "invalid_quantity", "getQuantity must be a positive integer", this._id);
+    }
+    if (v.getDiscount < 0 || v.getDiscount > 100) {
+      throw ValidationError.domainRule("value.getDiscount", "invalid_discount", "getDiscount must be between 0 and 100", this._id);
+    }
+  } else {
+    const v = this._value as number;
+    if (v < 0) {
+      throw ValidationError.domainRule("value", "value_positive", "Discount value must be positive", this._id);
+    }
+    if (this._type === "percentage" && v > 100) {
+      throw ValidationError.domainRule("value", "max_percentage", "Percentage discount cannot exceed 100%", this._id);
+    }
   }
 
   if (this._endDate <= this._startDate) {
@@ -107,7 +127,7 @@ export class DiscountEntity implements DiscountProps {
   public get type() {
     return this._type;
   }
-  public get value() {
+  public get value(): number | BuyXGetYValue {
     return this._value;
   }
   public get startDate() {
@@ -152,16 +172,15 @@ export class DiscountEntity implements DiscountProps {
     this.changeTracker.mark("description");
   }
 
-  public updateValue(value: number) {
-    if (value < 0) {
-      throw ValidationError.domainRule(
-        "value",
-        "value_positive",
-        "Discount value must be positive",
-        this._id
-      );
-    }
+  public updateValue(value: number | BuyXGetYValue) {
+    const prev = this._value;
     this._value = value;
+    try {
+      this.validate();
+    } catch (e) {
+      this._value = prev;
+      throw e;
+    }
     this.changeTracker.mark("value");
   }
 
@@ -191,6 +210,14 @@ export class DiscountEntity implements DiscountProps {
   public updateConditions(conditions: DiscountConditionVO[]) {
     this._conditions = conditions;
     this.changeTracker.mark("conditions");
+  }
+
+  public isActive(): boolean {
+    const now = new Date();
+    const withinDateRange = this._startDate <= now && now <= this._endDate;
+    const withinUsageLimit =
+      this._usageLimit === undefined || this._usageCount < this._usageLimit;
+    return this._active && withinDateRange && withinUsageLimit;
   }
 
   public toUpdateObject() {

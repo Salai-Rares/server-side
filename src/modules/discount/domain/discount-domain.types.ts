@@ -1,5 +1,11 @@
 import { DiscountConditionVO } from "./values/conditions/discount-condition.vo";
 
+export interface BuyXGetYValue {
+  buyQuantity: number;
+  getQuantity: number;
+  getDiscount: number; // percentage off the "get" items — 100 means free
+}
+
 // domain layer (entities)
 export interface DiscountProps {
   // no extends
@@ -7,13 +13,13 @@ export interface DiscountProps {
   name: string;
   description?: string;
   type: "percentage" | "fixed_amount" | "buy_x_get_y";
-  value: number;
+  value: number | BuyXGetYValue;
   startDate: Date;
   endDate: Date;
   usageLimit?: number;
   usageCount: number;
   active: boolean;
-  priority:number;
+  priority: number;
   conditions: DiscountConditionVO[];
   createdAt?: Date;
   updatedAt?: Date;

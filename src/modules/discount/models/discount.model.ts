@@ -3,8 +3,6 @@ import {
   DiscountConditionType,
   IDiscountDocument,
 } from "../types/discount.types";
-import { any } from "zod";
-// import { DiscountType } from "@/modules/product/schemas";
 
 const ConditionSchema = new Schema<DiscountConditionType>(
   {
@@ -39,7 +37,25 @@ const DiscountSchema = new Schema<IDiscountDocument>({
     enum: ["percentage", "fixed_amount", "buy_x_get_y"],
     required: true,
   },
-  value: { type: Number, required: true },
+  value: {
+    type: Schema.Types.Mixed,
+    required: true,
+    validate: {
+      validator: function (this: IDiscountDocument, v: unknown): boolean {
+        if (this.type === "buy_x_get_y") {
+          if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+          const { buyQuantity, getQuantity, getDiscount } = v as Record<string, unknown>;
+          return (
+            typeof buyQuantity === "number" &&
+            typeof getQuantity === "number" &&
+            typeof getDiscount === "number"
+          );
+        }
+        return typeof v === "number";
+      },
+      message: "value shape does not match discount type",
+    },
+  },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   usageLimit: { type: Number },

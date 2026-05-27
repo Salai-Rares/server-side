@@ -1,4 +1,7 @@
 import { LeanDocument, Types } from "mongoose";
+import { BuyXGetYValue } from "../domain/discount-domain.types";
+
+export type { BuyXGetYValue };
 
 export type DiscountConditionType =
   | { type: "product"; operator: "equals" | "in"; value: string | string[] }
@@ -13,7 +16,7 @@ export interface IDiscountBase {
   name: string;
   description?: string;
   type: "percentage" | "fixed_amount" | "buy_x_get_y";
-  value:number;
+  value: number | BuyXGetYValue;
   startDate:Date;
   endDate:Date;
   usageLimit?:number;

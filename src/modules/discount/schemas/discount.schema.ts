@@ -52,28 +52,46 @@ export const ConditionZodSchema = z.union([
   UserSegmentConditionSchema,
 ]);
 
+// --- Shared fields for all discount types ---
+const DiscountBaseSchema = z.object({
+  name: z.string().min(5).optional(),
+  description: z.string().min(10).optional(),
+  startDate: z.preprocess(
+    (val) => (val ? new Date(val as string) : undefined),
+    z.date()
+  ),
+  endDate: z.preprocess(
+    (val) => (val ? new Date(val as string) : undefined),
+    z.date()
+  ),
+  usageLimit: z.coerce.number().min(1).optional(),
+  usageCount: z.coerce.number().min(0).default(0),
+  active: z.boolean().default(false),
+  conditions: z.array(ConditionZodSchema).optional(),
+  priority: z.coerce.number().min(0).max(3),
+});
+
+const BuyXGetYValueSchema = z.object({
+  buyQuantity: z.number().int().min(1),
+  getQuantity: z.number().int().min(1),
+  getDiscount: z.number().min(0).max(100).default(100),
+});
+
 // --- Discount schema ---
-export const DiscountZodSchema = z
-  .object({
-    name: z.string().min(5).optional(),
-    description: z.string().min(10).optional(),
-    type: z.enum(["percentage", "fixed_amount", "buy_x_get_y"]),
+export const DiscountZodSchema = z.discriminatedUnion("type", [
+  DiscountBaseSchema.extend({
+    type: z.literal("percentage"),
+    value: z.coerce.number().min(0).max(100),
+  }),
+  DiscountBaseSchema.extend({
+    type: z.literal("fixed_amount"),
     value: z.coerce.number().min(0),
-    startDate: z.preprocess(
-      (val) => (val ? new Date(val as string) : undefined),
-      z.date()
-    ),
-    endDate: z.preprocess(
-      (val) => (val ? new Date(val as string) : undefined),
-      z.date()
-    ),
-    usageLimit: z.coerce.number().min(1).optional(),
-    usageCount: z.coerce.number().min(0).default(0),
-    active: z.boolean().default(false),
-    conditions: z.array(ConditionZodSchema).optional(),
-    priority:z.coerce.number().min(0).max(3)
-  })
-  .strip();
+  }),
+  DiscountBaseSchema.extend({
+    type: z.literal("buy_x_get_y"),
+    value: BuyXGetYValueSchema,
+  }),
+]);
 
 // --- Types ---
 export type DiscountConditionType = z.infer<typeof ConditionZodSchema>;

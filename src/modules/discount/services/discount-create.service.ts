@@ -27,6 +27,6 @@ export class CreateDiscountService implements IDiscountCreateService {
     options?: { session: ClientSession }
   ): Promise<DiscountEntity> {
     const discount = new DiscountEntity(props);
-    throw new Error("Method not implemented.");
+   return await this.discountRepoWrite.saveDiscount(discount, options);
   }
 }
