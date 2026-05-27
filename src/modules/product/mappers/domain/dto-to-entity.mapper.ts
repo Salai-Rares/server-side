@@ -1,7 +1,6 @@
 import { ProductProps } from "../../domain/product.types";
 import { ProductDescriptionVO } from "../../domain/value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "../../domain/value-objects/description/short-description.value-object";
-import { DiscountVO } from "../../domain/value-objects/discount.value-object";
 import { PriceVO } from "../../domain/value-objects/price.value-object";
 import { SeoMetaVO } from "../../domain/value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "../../domain/value-objects/sku.value-object";

@@ -14,7 +14,6 @@ import {
 } from "./product.types";
 import { ProductDescriptionVO } from "./value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "./value-objects/description/short-description.value-object";
-import { DiscountVO } from "./value-objects/discount.value-object";
 import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
 import { ProductSkuVO } from "./value-objects/sku.value-object";
@@ -446,76 +445,6 @@ export class ProductEntity implements ProductProps {
     this.changeTracker.mark("price");
   }
 
-  // updateDiscount(discountUpdate: UpdateDiscountType): void {
-  //   if (this._status.isDeleted()) {
-  //     throw ValidationError.domainRule(
-  //       "discount",
-  //       "immutable_when_deleted",
-  //       "Cannot update discount of deleted product",
-  //       this._id
-  //     );
-  //   }
-  //   if (!this._price) {
-  //     throw ValidationError.domainRule(
-  //       "discount",
-  //       "missing_price",
-  //       "Cannot apply discount without a price",
-  //       this._id
-  //     );
-  //   }
-  //   // Use current values if not provided (for partial updates)
-  //   const newType = discountUpdate.type ?? this._discount?.type;
-  //   const newValue = discountUpdate.value ?? this._discount?.value;
-  //   const newValidUntil =
-  //     discountUpdate.validUntil ?? this._discount?.validUntil;
-
-  //   // Ensure we have required fields for creating the VO
-  //   if (!newType || newValue === undefined) {
-  //     throw ValidationError.domainRule(
-  //       "discount",
-  //       "missing_required_fields",
-  //       "Discount type and value are required for update",
-  //       this._id
-  //     );
-  //   }
-  //   const newDiscount = new DiscountVO({
-  //     type: newType,
-  //     value: newValue,
-  //     validUntil: newValidUntil,
-  //   });
-
-  //   // Business rule: Only validate fixed discounts against price
-  //   if (newDiscount.type === "fixed") {
-  //     if (newDiscount.value >= this._price.amount) {
-  //       throw ValidationError.domainRule(
-  //         "discount",
-  //         "fixed_discount_exceeds_price",
-  //         "Fixed discount cannot be equal to or greater than product price",
-  //         {
-  //           discountValue: newDiscount.value,
-  //           productPrice: this._price.amount,
-  //         }
-  //       );
-  //     }
-  //   }
-
-  //   this._discount = newDiscount;
-  //   this.changeTracker.mark("discount");
-  // }
-
-  // clearDiscount(): void {
-  //   if (this._status.isDeleted()) {
-  //     throw ValidationError.domainRule(
-  //       "discount",
-  //       "immutable_when_deleted",
-  //       "Cannot clear discount of deleted product",
-  //       this._id
-  //     );
-  //   }
-
-  //   this._discount = undefined;
-  //   this.changeTracker.mark("discount");
-  // }
   updateFeatured(isFeatured: boolean): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(

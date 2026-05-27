@@ -9,7 +9,6 @@ import {
 import { AllUniqueKeyAndValuesFilters } from "../types/product-query-filter.types";
 import { ProductDescriptionVO } from "./value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "./value-objects/description/short-description.value-object";
-import { DiscountVO } from "./value-objects/discount.value-object";
 import { ImageVO } from "./value-objects/image.value-object";
 import { PriceVO } from "./value-objects/price.value-object";
 import { SeoMetaVO } from "./value-objects/seo-meta.value-object";
@@ -35,7 +34,6 @@ export interface ProductProps {
   vatRate?: VatRateType;
   discount?: string;
   productOptions?: ReadonlyMap<string, string>;
-  // discount?:DiscountVO,
   variants?: ProductVariantEntity[];
   isFeatured?: boolean;
   status: EntityStatusVO;

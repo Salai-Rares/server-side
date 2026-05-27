@@ -1,6 +1,5 @@
 import { ValidationError, ValidationField } from "@/shared/errors/ValidationError";
 import {  PriceType } from "../../types";
-import { DiscountVO } from "./discount.value-object";
 export class PriceVO {
   private readonly _amount: number;
   private readonly _currency: string;
@@ -47,12 +46,4 @@ export class PriceVO {
     return this.amount === other.amount && this.currency === other.currency;
   }
 
-  // Example domain method
-  applyDiscount(discount: DiscountVO): PriceType {
-    const newAmount = discount.applyTo(this._amount);
-    return new PriceVO({
-      amount: newAmount, // Prevent negative prices
-      currency: this._currency,
-    });
-  }
 }

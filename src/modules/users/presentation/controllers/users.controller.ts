@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import {
   BaseHttpController,
   controller,
-  httpGet,
   httpPost,
 } from "inversify-express-utils";
 import {
@@ -10,10 +9,13 @@ import {
   CreateUserSchema,
 } from "../schemas/create-user.schema";
 import { LoginHttpDto, LoginSchema } from "../schemas/login.schema";
+import { ResetPasswordDto, ResetPasswordSchema } from "../schemas/reset-password.schema";
 import { inject } from "inversify";
 import { USERS_TYPES } from "../../infrastructure/di/users.symbols";
 import { IUserRegisterUseCase } from "../../application/use-cases/register/user-register.interface";
 import { IUserLoginUseCase } from "../../application/use-cases/login/user-login.use-case.interface";
+import { IForgotPasswordUseCase } from "../../application/use-cases/forgot-password/forgot-password.use-case.interface";
+import { IResetPasswordUseCase } from "../../application/use-cases/reset-password/reset-password.use-case.interface";
 import { IVerifyEmailUseCase } from "../../application/use-cases/verify-email/verify-email.use-case.interface";
 import { UserEntity } from "../../domain/entities/user.entity";
 import { HttpStatus } from "@/constants/errors.constants";
@@ -27,6 +29,10 @@ export class UserController extends BaseHttpController {
     private userRegisterUseCase: IUserRegisterUseCase,
     @inject(USERS_TYPES.UserLoginUseCase)
     private userLoginUseCase: IUserLoginUseCase,
+    @inject(USERS_TYPES.ForgotPasswordUseCase)
+    private forgotPasswordUseCase: IForgotPasswordUseCase,
+    @inject(USERS_TYPES.ResetPasswordUseCase)
+    private resetPasswordUseCase: IResetPasswordUseCase,
     @inject(USERS_TYPES.VerifyEmailUseCase)
     private verifyEmailUseCase: IVerifyEmailUseCase
   ) {
@@ -61,11 +67,26 @@ export class UserController extends BaseHttpController {
     });
   }
 
-  @httpGet("/verify-email")
+  @httpPost("/forgot-password")
+  async forgotPassword(req: Request, res: Response) {
+    const { email } = req.body;
+    if (!email || typeof email !== "string") throw ApiError.badRequest("Email is required");
+    await this.forgotPasswordUseCase.execute(email.toLowerCase().trim());
+    res.status(HttpStatus.OK).json({ success: true, data: { message: "If an account with that email exists, you will receive a reset link." } });
+  }
+
+  @httpPost("/reset-password")
+  async resetPassword(req: Request, res: Response) {
+    const dto: ResetPasswordDto = ResetPasswordSchema.parse(req.body);
+    await this.resetPasswordUseCase.execute({ token: dto.token, newPassword: dto.password });
+    res.status(HttpStatus.OK).json({ success: true, data: { message: "Password updated successfully" } });
+  }
+
+  @httpPost("/verify-email")
   async verifyEmail(req: Request, res: Response) {
-    const { token } = req.query;
+    const { token } = req.body;
     if (!token || typeof token !== "string") throw ApiError.badRequest("Token is required");
     await this.verifyEmailUseCase.execute(token);
-    res.status(200).json({ success: true, data: { message: "Email verified successfully" } });
+    res.status(HttpStatus.OK).json({ success: true, data: { message: "Email verified successfully" } });
   }
 }

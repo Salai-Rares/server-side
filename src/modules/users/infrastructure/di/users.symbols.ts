@@ -5,6 +5,8 @@ export const USERS_TYPES = {
   PasswordPolicy: Symbol.for("PasswordPolicy"),
   UserRegisterUseCase: Symbol.for("UserRegisterUseCase"),
   UserLoginUseCase: Symbol.for("UserLoginUseCase"),
+  ForgotPasswordUseCase: Symbol.for("ForgotPasswordUseCase"),
+  ResetPasswordUseCase: Symbol.for("ResetPasswordUseCase"),
   PasswordHasher: Symbol.for("PasswordHasher"),
   ScheduleEmailConfirmationOnUserRegistered: Symbol.for(
     "ScheduleEmailConfirmationOnUserRegistered"

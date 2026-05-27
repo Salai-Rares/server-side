@@ -17,12 +17,13 @@ export class TokenService
 
   async generateToken(
     subject: string,
-    type: ConfirmationTokenType
+    type: ConfirmationTokenType,
+    ttlSeconds?: number
   ): Promise<string> {
     const token = crypto.randomUUID();
     const key = this.buildKey(type, token);
 
-    await this.cache.set(key, { subject }, this.TTL_SECONDS);
+    await this.cache.set(key, { subject }, ttlSeconds ?? this.TTL_SECONDS);
 
     return token;
   }

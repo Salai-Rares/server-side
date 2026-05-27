@@ -17,6 +17,12 @@ import { IVerifyEmailUseCase } from "../../application/use-cases/verify-email/ve
 import { VerifyEmailUseCase } from "../../application/use-cases/verify-email/verify-email.use-case";
 import { IUserLoginUseCase } from "../../application/use-cases/login/user-login.use-case.interface";
 import { UserLoginUseCase } from "../../application/use-cases/login/user-login.use-case";
+import { IForgotPasswordUseCase } from "../../application/use-cases/forgot-password/forgot-password.use-case.interface";
+import { ForgotPasswordUseCase } from "../../application/use-cases/forgot-password/forgot-password.use-case";
+import { IResetPasswordUseCase } from "../../application/use-cases/reset-password/reset-password.use-case.interface";
+import { ResetPasswordUseCase } from "../../application/use-cases/reset-password/reset-password.use-case";
+import { SchedulePasswordResetEmailHandler } from "../../domain/events/password-reset-requested/password-reset-requested.domain.handler";
+import { PasswordResetEmailHandler } from "../../domain/events/password-reset-requested/password-reset-requested.email.handler";
 
 export const usersModule = new ContainerModule((bind: interfaces.Bind) => {
   bind<PasswordPolicy>(PasswordPolicy).toSelf().inSingletonScope();
@@ -41,4 +47,16 @@ export const usersModule = new ContainerModule((bind: interfaces.Bind) => {
   bind<IUserLoginUseCase>(USERS_TYPES.UserLoginUseCase)
     .to(UserLoginUseCase)
     .inSingletonScope();
+  bind<IForgotPasswordUseCase>(USERS_TYPES.ForgotPasswordUseCase)
+    .to(ForgotPasswordUseCase)
+    .inSingletonScope();
+  bind<IResetPasswordUseCase>(USERS_TYPES.ResetPasswordUseCase)
+    .to(ResetPasswordUseCase)
+    .inSingletonScope();
+  bind<IDomainEventHandler>(EVENTS_SYMBOLS.DomainEventHandler).to(
+    SchedulePasswordResetEmailHandler,
+  );
+  bind<IEmailEventHandler>(EVENTS_SYMBOLS.EmailEventHandler).to(
+    PasswordResetEmailHandler,
+  );
 });

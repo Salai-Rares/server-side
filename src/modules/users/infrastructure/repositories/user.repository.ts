@@ -41,6 +41,13 @@ export class UserRepository implements IUserRepository {
     );
   }
 
+  async updatePassword(user: UserEntity): Promise<void> {
+    await UserModel.updateOne(
+      { _id: toObjectId(user.id) },
+      { $set: { passwordHash: user.passwordHash, updatedAt: user.updatedAt } }
+    );
+  }
+
   async updateEmailVerification(userId: string, emailVerification: EmailVerificationVO): Promise<void> {
     await UserModel.updateOne(
       { _id: toObjectId(userId) },

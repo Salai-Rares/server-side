@@ -275,6 +275,11 @@ export class UserEntity extends AggregateRoot implements UserProps {
     this._updatedAt = new Date();
   }
 
+  changePassword(newHash: string): void {
+    this._passwordHash = newHash;
+    this._updatedAt = new Date();
+  }
+
   markEmailVerified(): void {
     this._emailVerification = this._emailVerification.markVerified();
     this._updatedAt = new Date();

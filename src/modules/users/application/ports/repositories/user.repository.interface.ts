@@ -8,4 +8,5 @@ export interface IUserRepository {
   findByEmailWithPassword(email: string): Promise<UserEntity | null>;
   updateEmailVerification(userId: string, emailVerification: EmailVerificationVO): Promise<void>;
   updateLoginStatus(user: UserEntity): Promise<void>;
+  updatePassword(user: UserEntity): Promise<void>;
 }
