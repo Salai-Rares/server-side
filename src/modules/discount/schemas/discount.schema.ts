@@ -65,7 +65,6 @@ const DiscountBaseSchema = z.object({
     z.date()
   ),
   usageLimit: z.coerce.number().min(1).optional(),
-  usageCount: z.coerce.number().min(0).default(0),
   active: z.boolean().default(false),
   conditions: z.array(ConditionZodSchema).optional(),
   priority: z.coerce.number().min(0).max(3),

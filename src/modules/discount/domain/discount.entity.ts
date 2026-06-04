@@ -95,6 +95,10 @@ export class DiscountEntity implements DiscountProps {
     }
   }
 
+  if (!this._conditions || this._conditions.length === 0) {
+    throw ValidationError.domainRule("conditions", "conditions_required", "Discount must have at least one condition", this._id);
+  }
+
   if (this._endDate <= this._startDate) {
     throw ValidationError.domainRule("dates", "date_order", "End date must be after start date", this._id);
   }
@@ -208,6 +212,9 @@ export class DiscountEntity implements DiscountProps {
   }
 
   public updateConditions(conditions: DiscountConditionVO[]) {
+    if (!conditions || conditions.length === 0) {
+      throw ValidationError.domainRule("conditions", "conditions_required", "Discount must have at least one condition", this._id);
+    }
     this._conditions = conditions;
     this.changeTracker.mark("conditions");
   }

@@ -11,6 +11,9 @@ export class CartTotalConditionVO extends DiscountConditionVO {
     if (typeof value !== "number" || Number.isNaN(value)) {
       throw ValidationError.domainRule("conditions.value", "invalid_type", "Cart total must be a number");
     }
+    if (value <= 0) {
+      throw ValidationError.domainRule("conditions.value", "value_positive", "Cart total must be greater than 0");
+    }
 
     this.value = value;
   }

@@ -25,7 +25,7 @@ export class DiscountDtoToEntity {
       startDate: dto.startDate,
       endDate: dto.endDate,
       usageLimit: dto.usageLimit,
-      usageCount: dto.usageCount,
+      usageCount: 0,
       active: dto.active,
       priority:dto.priority,
       conditions:conditionsVo,
