@@ -5,7 +5,7 @@ import { SeoMetaSchema } from "../../../shared/models";
 import {
   ArchivedMetadataType,
   DeletedMetadataType,
-  // DiscountType,
+
   IProduct,
   IProductDocument,
   PriceType,
@@ -61,7 +61,6 @@ const VariantSchema = new Schema<ProductVariant>({
     type: Number,
     enum: [5, 9, 21],
   },
-  discount: { type: Types.ObjectId, ref: "Discount" },
   images: { type: [ProductImageSchema] },
 });
 
@@ -142,7 +141,6 @@ const ProductSchema = new Schema<IProductDocument>(
       type: Number,
       enum: [5, 9, 21],
     },
-    discount: { type: Types.ObjectId, ref: "Discount" },
     hasVariants: { type: Boolean, default: false },
     variants: { type: [VariantSchema], default: [] },
 

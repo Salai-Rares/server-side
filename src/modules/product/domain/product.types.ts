@@ -32,7 +32,6 @@ export interface ProductProps {
   price?: PriceVO;
   costPrice?: PriceVO;
   vatRate?: VatRateType;
-  discount?: string;
   productOptions?: ReadonlyMap<string, string>;
   variants?: ProductVariantEntity[];
   isFeatured?: boolean;

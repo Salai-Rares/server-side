@@ -12,7 +12,6 @@ export class VariantEntityToDbMapper {
       productOptions: variant.productOptions,
       price: variant.price,
 
-      discount: variant.discount ? toObjectId(variant.discount) : undefined,
       images: variant.images?.map((image) => ({
         _id: toObjectId(image.id),
         ...image,

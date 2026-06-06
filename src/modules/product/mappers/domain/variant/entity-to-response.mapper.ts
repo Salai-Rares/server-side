@@ -6,7 +6,6 @@ export class VariantProductEntityToResponseDtoMapper {
       id: variant.id,
       sku: variant.sku.value,
       productOptions: variant.productOptions ? Object.fromEntries(variant.productOptions.entries()) : null,
-      discount: variant.discount ?? null,
       price: variant.price
         ? {
             amount: variant.price.amount,

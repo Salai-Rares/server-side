@@ -13,6 +13,5 @@ export interface VariantProductProps {
   price?: PriceVO;
   costPrice?: PriceVO;
   vatRate?: VatRateType;
-  discount?: string;
   images?: ImageVO[];
 }

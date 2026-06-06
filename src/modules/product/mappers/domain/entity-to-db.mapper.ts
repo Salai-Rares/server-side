@@ -40,7 +40,6 @@ export class ProductEntityToPersistanceMapper {
             currency: entity.costPrice.currency,
           }
         : undefined,
-      discount: entity.discount ? toObjectId(entity.discount) : undefined,
       hasVariants: entity.hasVariants,
       variants: entity.variants?.map(
         VariantEntityToDbMapper.variantEntityToModel

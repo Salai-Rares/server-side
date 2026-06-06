@@ -8,7 +8,6 @@ import { isValidObjectId } from "@/shared/utils";
 import { PRODUCT_LIMITS } from "../../constants/product-validation.constants";
 import {
   PriceSchema,
-  // DiscountSchema,
   SeoMetaSchema,
   AttributeSchema,
   VariantDraftSchema,
@@ -21,7 +20,6 @@ import { VariantCreateCommandSchema } from "./update-product.command.schema";
 // ===============================
 
 const UpdatePriceSchema = PriceSchema.partial().strip();
-// const UpdateDiscountSchema = DiscountSchema.partial().strip();
 const UpdateSeoMetaSchema = SeoMetaSchema.partial().strip();
 
 export const TempImageRefSchema = z.object({
@@ -104,7 +102,7 @@ export const ProductDomainUpdateSchema = z
       .nullable()
       .optional(),
     price: UpdatePriceSchema.optional(),
-    // discount: UpdateDiscountSchema.nullable().optional(),
+
     isFeatured: z.boolean().nullable().optional(),
     seo: UpdateSeoMetaSchema.nullable().optional(),
     attributes: z
@@ -274,7 +272,7 @@ export type ProductDomainUpdateType = z.infer<typeof ProductDomainUpdateSchema>;
 
 export type VariantOperationsType = z.infer<typeof VariantOperationsSchema>;
 export type UpdatePriceType = z.infer<typeof UpdatePriceSchema>;
-// export type UpdateDiscountType = z.infer<typeof UpdateDiscountSchema>;
+
 export type UpdateSeoMetaType = z.infer<typeof UpdateSeoMetaSchema>;
 // Image operation types
 export type ImageOperationsType = z.infer<typeof ImageOperationsSchema>;

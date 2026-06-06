@@ -19,7 +19,7 @@ export class ProductDtoToEntityMapper {
     dto: CreateProductType
   ): Omit<
     ProductProps,
-    "id" | "variants" | "hasVariants" | "slug" | "images" | "discount"
+    "id" | "variants" | "hasVariants" | "slug" | "images"
   > {
     return {
       sku: new ProductSkuVO(dto.sku),

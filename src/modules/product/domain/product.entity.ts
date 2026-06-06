@@ -22,7 +22,7 @@ import { EntityStatusVO } from "@/core/domain/value-objects/status.value-objects
 import { ProductVariantEntity } from "./variant-product.entity";
 import {
   ProductDomainUpdateType,
-  // UpdateDiscountType,
+
   UpdatePriceType,
   UpdateSeoMetaType,
   VariantUpdateType,
@@ -57,7 +57,6 @@ export class ProductEntity implements ProductProps {
   private _price?: PriceVO;
   private _costPrice?: PriceVO;
   private _vatRate?: VatRateType;
-  private _discount?: string;
   private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
   private _isFeatured?: boolean;
@@ -86,8 +85,6 @@ export class ProductEntity implements ProductProps {
     this._tags = props.tags;
     this._images = props.images;
     this._price = props.price;
-    // this._discount = props.discount;
-    this._discount = props.discount;
     this._variants = props.variants;
     this._hasVariants = this.calculateHasVariants();
 
@@ -104,15 +101,6 @@ export class ProductEntity implements ProductProps {
     this.validate();
   }
   private validate(): void {
-    if (this._discount) {
-      if (!isValidObjectId(this._discount)) {
-        throw ValidationError.domainRule(
-          "discount",
-          "discount_id",
-          "Discount must be a uuid"
-        );
-      }
-    }
     if (this._variants && this._variants.length > 0) {
       this.validateVariantSkus(this._variants);
     }
@@ -179,9 +167,6 @@ export class ProductEntity implements ProductProps {
 
   get vatRate(): VatRateType | undefined {
     return this._vatRate;
-  }
-  get discount(): string | undefined {
-    return this._discount;
   }
   get hasVariants(): boolean {
     return this._hasVariants;
@@ -668,13 +653,6 @@ export class ProductEntity implements ProductProps {
       this.updatePrice(updates.price);
     }
 
-    // if (updates.discount !== undefined) {
-    //   if (updates.discount === null) {
-    //     this.clearDiscount();
-    //   } else {
-    //     this.updateDiscount(updates.discount);
-    //   }
-    // }
 
     if (updates.isFeatured !== undefined) {
       if (updates.isFeatured === null) {

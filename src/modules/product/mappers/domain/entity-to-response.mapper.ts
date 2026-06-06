@@ -35,14 +35,7 @@ export class ProductEntityToResponseDtoMapper {
           }
         : null,
       vatRate: entity.vatRate ?? null,
-      // discount: entity.discount
-      //   ? {
-      //       type: entity.discount.type,
-      //       value: entity.discount.value,
-      //       validUntil: entity.discount.validUntil?.toISOString() ?? null,
-      //     }
-      //   : null, // Optional object
-      discount: entity.discount ?? null,
+
       hasVariants: entity.hasVariants, // Required boolean
 
       variants:

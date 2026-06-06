@@ -22,7 +22,6 @@ export interface IProductBase {
   price?: PriceType;
   costPrice?: PriceType;
   vatRate?: 5 | 9 | 21;
-  discount?: Types.ObjectId;
   productOptions?: ReadonlyMap<string, string>;
   hasVariants: boolean;
   variants?: ProductVariant[]; // color/size options
@@ -73,11 +72,7 @@ export interface PriceType {
   amount: number; // base price
 }
 
-// export interface DiscountType {
-//   type: "percentage" | "fixed";
-//   value: number;
-//   validUntil?: Date;
-// }
+
 
 export interface ProductVariant {
   _id: Types.ObjectId;
@@ -89,7 +84,6 @@ export interface ProductVariant {
   costPrice?: PriceType;
   vatRate?: 5 | 9 | 21;
   images?: ProductImage[];
-  discount?: Types.ObjectId;
 }
 
 export interface RatingSummary {

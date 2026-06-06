@@ -7,15 +7,12 @@ import {
   RatingSummarySchema,
   objectIdSchema,
 } from "./shared.schema";
-import { DiscountZodSchema } from "@/modules/discount/schemas/discount.schema";
-
 // ===============================
 // CREATION SCHEMAS
 // ===============================
 
 export const VariantWithInventorySchema = VariantDraftSchema.extend({
   inventory: InventorySchema.optional(),
-  discountData: DiscountZodSchema.optional(),
 }).strip();
 
 export const CreateProductSchema = ProductDraftSchema.extend({
@@ -41,7 +38,6 @@ export const CreateProductSchema = ProductDraftSchema.extend({
     .min(PRODUCT_LIMITS.RATINGS.MIN_COUNT)
     .optional()
     .default(PRODUCT_LIMITS.RATINGS.DEFAULT),
-  discountData: DiscountZodSchema.optional(),
 });
 
 // ===============================

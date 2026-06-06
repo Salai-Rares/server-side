@@ -7,7 +7,7 @@ import { VariantBaseType, VariantWithInventoryType } from "../../../schemas";
 export class ProductVariantMapper {
   static toDomain(
     raw: VariantBaseType
-  ): Omit<VariantProductProps, "id" | "images" | "discount" | "slug"> {
+  ): Omit<VariantProductProps, "id" | "images" | "slug"> {
     return {
       name: raw.name,
       sku: new ProductSkuVO(raw.sku),

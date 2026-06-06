@@ -49,7 +49,6 @@ export class ProductFromPersistanceToEntityMapper {
           })
         : undefined,
       vatRate: dbData.vatRate,
-      discount: dbData.discount?.toHexString(),
       variants: dbData.variants?.map(
         VariantProductFromPersistanceToEntity.fromPersistanceToEntity
       ),

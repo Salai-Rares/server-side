@@ -19,9 +19,7 @@ export const PRODUCT_LIMITS = {
    MIN_AMOUNT: 0,
    MAX_AMOUNT: 10000,
  },
- DISCOUNT: {
-   TYPES:["percentage","fixed"]
- },
+
  IMAGES: {
    MIN_COUNT: 0,
    MAX_COUNT: 5,

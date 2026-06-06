@@ -19,7 +19,6 @@ export class ProductVariantEntity implements VariantProductProps {
   private _costPrice?:PriceVO;
   private _vatRate?:VatRateType;
   private _images?: ImageVO[];
-  private _discount?: string;
   constructor(props: VariantProductProps) {
     this._id = props.id;
     this._productOptions = props.productOptions;
@@ -28,7 +27,6 @@ export class ProductVariantEntity implements VariantProductProps {
     this._slug = props.slug;
     this._sku = props.sku;
     this._images = props.images;
-    this._discount = props.discount;
     this._name = props.name;
     this.validate();
   }
@@ -40,9 +38,6 @@ export class ProductVariantEntity implements VariantProductProps {
   }
   get id(): string {
     return this._id;
-  }
-  get discount(): string | undefined {
-    return this._discount;
   }
   get productOptions(): ReadonlyMap<string, string> | undefined {
     return this._productOptions;
@@ -65,16 +60,6 @@ export class ProductVariantEntity implements VariantProductProps {
   }
 
   private validate() {
-    if (this._discount) {
-      if (!isValidObjectId(this._discount)) {
-        throw ValidationError.domainRule(
-          "discount",
-          "id_uuid",
-          "Discount must be a uuid"
-        );
-      }
-    }
-
     if (this._productOptions && this._productOptions.size <= 0) {
       throw new Error("Options cannot be empty");
     }

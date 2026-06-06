@@ -20,10 +20,6 @@ export const PriceSchema = z
   })
   .strip();
 
-export const DiscountProductSchema = z.string().refine(isValidObjectId, {
-  message: "Invalid MongoDB ID format",
-});
-
 export const ProductImageSchema = z
   .object({
     url: z.string().max(PRODUCT_LIMITS.IMAGES.URL_MAX_LENGTH),
@@ -108,7 +104,6 @@ export const VariantDraftSchema = z
       .array(ProductImageSchema)
       .max(PRODUCT_LIMITS.IMAGES.MAX_COUNT)
       .optional(),
-    discount: DiscountProductSchema.optional(),
   })
   .strip();
 
@@ -165,8 +160,6 @@ export const ProductDraftSchema = z.object({
     .number()
     .pipe(z.union([z.literal(5), z.literal(9), z.literal(21)]))
     .optional(),
-  discount: DiscountProductSchema.optional(),
-
   isFeatured: z.boolean().optional(),
   seo: SeoMetaSchema.optional(),
   attributes: z.array(AttributeSchema).optional(),
@@ -178,7 +171,6 @@ export const ProductDraftSchema = z.object({
 // ===============================
 
 export type PriceType = z.infer<typeof PriceSchema>;
-// export type DiscountType = z.infer<typeof DiscountSchema>;
 export type ProductImageType = z.infer<typeof ProductImageSchema>;
 export type RatingSummaryType = z.infer<typeof RatingSummarySchema>;
 export type SeoMetaType = z.infer<typeof SeoMetaSchema>;

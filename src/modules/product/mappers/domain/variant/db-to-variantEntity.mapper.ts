@@ -14,8 +14,6 @@ export class VariantProductFromPersistanceToEntity {
       slug: new SlugVO(raw.slug),
       sku: new ProductSkuVO(raw.sku),
       productOptions: raw.productOptions,
-      discount: raw.discount?.toHexString(),
-
       ...(raw.price && { price: new PriceVO(raw.price) }),
       images: raw.images?.map((image) => ({
         id: image._id.toString(),

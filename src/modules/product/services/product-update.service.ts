@@ -181,7 +181,7 @@ export class ProductUpdateUseCase implements IProductUpdateService {
                 price,
                 images,
                 inventory,
-                discountData,
+          
                 name,
               } = variantToAdd;
               const dtoForMapping = { sku, productOptions, price, name };
