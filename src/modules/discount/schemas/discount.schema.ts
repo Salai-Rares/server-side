@@ -1,26 +1,27 @@
 import { z } from "zod";
 
-// --- Individual condition schemas ---
 const ProductConditionSchema = z.object({
   type: z.literal("product"),
-  operator: z.enum(["equals", "in"]),
-  value: z.union([z.string(), z.array(z.string())]),
+  operator: z.literal("equals"),
+  value: z.string(),
 });
+
 const VariantConditionSchema = z.object({
   type: z.literal("variant"),
-  operator: z.enum(["equals", "in"]),
-  value: z.union([z.string(), z.array(z.string())]),
+  operator: z.literal("equals"),
+  value: z.string(),
 });
+
 const CategoryConditionSchema = z.object({
   type: z.literal("category"),
-  operator: z.enum(["equals", "in"]),
-  value: z.union([z.string(), z.array(z.string())]),
+  operator: z.literal("equals"),
+  value: z.string(),
 });
 
 const TagConditionSchema = z.object({
   type: z.literal("tag"),
-  operator: z.enum(["equals", "in"]),
-  value: z.union([z.string(), z.array(z.string())]),
+  operator: z.literal("equals"),
+  value: z.string(),
 });
 
 const CartTotalConditionSchema = z.object({
@@ -37,11 +38,10 @@ const QuantityConditionSchema = z.object({
 
 const UserSegmentConditionSchema = z.object({
   type: z.literal("user_segment"),
-  operator: z.enum(["equals", "in"]),
-  value: z.union([z.string(), z.array(z.string())]),
+  operator: z.literal("equals"),
+  value: z.string(),
 });
 
-// --- Union of all condition schemas ---
 export const ConditionZodSchema = z.union([
   ProductConditionSchema,
   VariantConditionSchema,
@@ -52,7 +52,6 @@ export const ConditionZodSchema = z.union([
   UserSegmentConditionSchema,
 ]);
 
-// --- Shared fields for all discount types ---
 const DiscountBaseSchema = z.object({
   name: z.string().min(5).optional(),
   description: z.string().min(10).optional(),
@@ -66,6 +65,7 @@ const DiscountBaseSchema = z.object({
   ),
   usageLimit: z.coerce.number().min(1).optional(),
   active: z.boolean().default(false),
+  applicationMode: z.enum(["automatic", "code_required"]),
   conditions: z.array(ConditionZodSchema).optional(),
   priority: z.coerce.number().min(0).max(3),
 });
@@ -76,7 +76,6 @@ const BuyXGetYValueSchema = z.object({
   getDiscount: z.number().min(0).max(100).default(100),
 });
 
-// --- Discount schema ---
 export const DiscountZodSchema = z.discriminatedUnion("type", [
   DiscountBaseSchema.extend({
     type: z.literal("percentage"),
@@ -90,8 +89,11 @@ export const DiscountZodSchema = z.discriminatedUnion("type", [
     type: z.literal("buy_x_get_y"),
     value: BuyXGetYValueSchema,
   }),
+  DiscountBaseSchema.extend({
+    type: z.literal("free_shipping"),
+    value: z.literal(0).default(0),
+  }),
 ]);
 
-// --- Types ---
 export type DiscountConditionType = z.infer<typeof ConditionZodSchema>;
 export type DiscountZodType = z.infer<typeof DiscountZodSchema>;

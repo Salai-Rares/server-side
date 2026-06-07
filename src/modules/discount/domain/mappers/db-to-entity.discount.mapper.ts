@@ -20,7 +20,7 @@ export class DiscountPersistanceToEntity {
       usageLimit: model.usageLimit,
       usageCount: model.usageCount,
       active: model.active,
-
+      applicationMode: model.applicationMode,
       conditions: (model.conditions || []).map((c) =>
         DiscountConditionFactory.create(c)
       ),

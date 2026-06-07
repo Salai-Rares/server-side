@@ -27,8 +27,9 @@ export class DiscountDtoToEntity {
       usageLimit: dto.usageLimit,
       usageCount: 0,
       active: dto.active,
-      priority:dto.priority,
-      conditions:conditionsVo,
+      priority: dto.priority,
+      applicationMode: dto.applicationMode,
+      conditions: conditionsVo,
       createdAt: undefined,
       updatedAt: undefined,
     };

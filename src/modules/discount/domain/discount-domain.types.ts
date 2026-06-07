@@ -12,7 +12,8 @@ export interface DiscountProps {
   id: string;
   name: string;
   description?: string;
-  type: "percentage" | "fixed_amount" | "buy_x_get_y";
+  type: "percentage" | "fixed_amount" | "buy_x_get_y" | "free_shipping";
+  applicationMode: "automatic" | "code_required";
   value: number | BuyXGetYValue;
   startDate: Date;
   endDate: Date;

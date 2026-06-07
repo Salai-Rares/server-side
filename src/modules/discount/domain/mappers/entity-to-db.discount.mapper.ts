@@ -19,7 +19,8 @@ export class DiscountEntityToPersistenceMapper {
       usageLimit: entity.usageLimit,
       usageCount: entity.usageCount,
       active: entity.active,
-      priority:entity.priority,
+      priority: entity.priority,
+      applicationMode: entity.applicationMode,
       conditions: entity.conditions.map((c) => DiscountEntityToPersistenceMapper.conditionToPersistence(c)),
     };
   }

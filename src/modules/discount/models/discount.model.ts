@@ -22,7 +22,7 @@ const ConditionSchema = new Schema<DiscountConditionType>(
     value: { type: Schema.Types.Mixed, required: true },
     operator: {
       type: String,
-      enum: ["equals", "in", "greater_than", "less_than"],
+      enum: ["equals", "greater_than", "less_than"],
       required: true,
     },
   },
@@ -34,7 +34,12 @@ const DiscountSchema = new Schema<IDiscountDocument>({
   description: { type: String },
   type: {
     type: String,
-    enum: ["percentage", "fixed_amount", "buy_x_get_y"],
+    enum: ["percentage", "fixed_amount", "buy_x_get_y", "free_shipping"],
+    required: true,
+  },
+  applicationMode: {
+    type: String,
+    enum: ["automatic", "code_required"],
     required: true,
   },
   value: {
