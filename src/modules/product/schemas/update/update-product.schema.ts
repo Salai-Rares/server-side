@@ -102,6 +102,13 @@ export const ProductDomainUpdateSchema = z
       .nullable()
       .optional(),
     price: UpdatePriceSchema.optional(),
+    compareAtPrice: z
+      .object({
+        original: PriceSchema,
+        expiresAt: z.coerce.date().optional(),
+      })
+      .nullable()
+      .optional(),
 
     isFeatured: z.boolean().nullable().optional(),
     seo: UpdateSeoMetaSchema.nullable().optional(),

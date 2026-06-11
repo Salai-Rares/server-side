@@ -40,6 +40,20 @@ export class ProductEntityToPersistanceMapper {
             currency: entity.costPrice.currency,
           }
         : undefined,
+      compareAtPrice: entity.compareAtPrice
+        ? {
+            original: {
+              amount: entity.compareAtPrice.original.amount,
+              currency: entity.compareAtPrice.original.currency,
+            },
+            expiresAt: entity.compareAtPrice.expiresAt,
+          }
+        : undefined,
+      priceHistory: entity.priceHistory.map((entry) => ({
+        price: { amount: entry.price.amount, currency: entry.price.currency },
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+      })),
       hasVariants: entity.hasVariants,
       variants: entity.variants?.map(
         VariantEntityToDbMapper.variantEntityToModel
@@ -57,25 +71,13 @@ export class ProductEntityToPersistanceMapper {
           }
         : undefined,
       attributes: entity.attributes,
-      createdBy: entity.createdBy ? toObjectId(entity.createdBy) : undefined,
-      publishedMetaData: entity.publishedMetaData
-        ? {
-            publishedAt: entity.publishedMetaData.publishedAt,
-            publishedBy: toObjectId(entity.publishedMetaData.publishedBy),
-          }
-        : undefined,
-      deletedMetaData: entity.deletedMetaData
-        ? {
-            deletedAt: entity.deletedMetaData.deletedAt,
-            deletedBy: toObjectId(entity.deletedMetaData.deletedBy),
-          }
-        : undefined,
-      archivedMetaData: entity.archivedMetaData
-        ? {
-            archivedAt: entity.archivedMetaData.archivedAt,
-            archivedBy: toObjectId(entity.archivedMetaData.archivedBy),
-          }
-        : undefined,
+      createdBy: toObjectId(entity.createdBy),
+      statusHistory: entity.statusHistory.map((entry) => ({
+        status: entry.status,
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+        reason: entry.reason,
+      })),
     };
   }
   static mapPartialToPersistence(

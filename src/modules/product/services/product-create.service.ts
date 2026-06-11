@@ -1,7 +1,7 @@
 import { inject, injectable } from "inversify";
 import { IProductCreateService } from "../types";
 import { IProductRepositoryWrite } from "../types/create/product-write.repository.types";
-import { TYPES } from "@/shared/types";
+import { CallerContext, TYPES } from "@/shared/types";
 
 import { ProductDtoToEntityMapper } from "../mappers/domain/dto-to-entity.mapper";
 import { ProductVariantEntity } from "../domain/variant-product.entity";
@@ -45,7 +45,8 @@ export class ProductCreateUseCase implements IProductCreateService {
    *
    */
   async createProductWithInventories(
-    dto: CreateProductType
+    dto: CreateProductType,
+    caller: CallerContext
   ): Promise<{ product: ProductEntity; inventories?: InventoryEntity[] }> {
     const session = await mongoose.startSession();
     let result:
@@ -119,6 +120,7 @@ export class ProductCreateUseCase implements IProductCreateService {
           images,
           slug: SlugVO.fromName(dto.name),
           variants,
+          createdBy: caller.userId,
         });
 
         await this.variantValidator.validate(product, { session });

@@ -19,6 +19,6 @@ export interface ProductUpdateCommand {
   productDomain?: ProductDomainUpdateType;
   imageOperations?: ImageOperationCommandType;
   inventory?: InventoryOperationType;
-  variantOperations?: VariantOperationsCommandType
+  variantOperations?: VariantOperationsCommandType;
   reason?: string;
 }

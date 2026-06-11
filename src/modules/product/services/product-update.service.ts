@@ -1,6 +1,6 @@
 import { inject, injectable } from "inversify";
 
-import { TYPES } from "@/shared/types";
+import { CallerContext, TYPES } from "@/shared/types";
 
 
 
@@ -45,7 +45,8 @@ export class ProductUpdateUseCase implements IProductUpdateService {
     @inject(TYPES.IdGenerator) private idGenerator : IIdGenerator
   ) {}
   async updateProductWithInventories(
-    command: ProductUpdateCommand
+    command: ProductUpdateCommand,
+    caller: CallerContext
   ): Promise<{ product: ProductEntity; inventories: InventoryEntity[] }> {
     const session = await mongoose.startSession();
     let result:
@@ -92,7 +93,7 @@ export class ProductUpdateUseCase implements IProductUpdateService {
         }
 
         if (command.productDomain) {
-          product.updateMultiple(command.productDomain);
+          product.updateMultiple(command.productDomain, caller.userId);
         }
         const rootImageOperations = command.imageOperations;
         //Process all the root image operations

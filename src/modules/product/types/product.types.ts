@@ -3,6 +3,13 @@ import mongoose, { Types, Document, LeanDocument } from "mongoose";
 import { AllUniqueKeyAndValuesFilters } from "./product-query-filter.types";
 import { EntityStatusType } from "@/core/domain/value-objects/status.value-objects";
 
+export interface StatusHistoryEntry {
+  status: EntityStatusType;
+  changedAt: Date;
+  changedBy: string;
+  reason?: string;
+}
+
 // Define an interface that describes the shape of a Product document
 export interface IProductBase {
   slug: string;
@@ -21,6 +28,8 @@ export interface IProductBase {
   images?: ProductImage[];
   price?: PriceType;
   costPrice?: PriceType;
+  compareAtPrice?: CompareAtPriceType;
+  priceHistory?: PriceHistoryEntry[];
   vatRate?: 5 | 9 | 21;
   productOptions?: ReadonlyMap<string, string>;
   hasVariants: boolean;
@@ -35,11 +44,8 @@ export interface IProductBase {
   seo?: SeoMeta;
 
   attributes?: AllUniqueKeyAndValuesFilters;
-  publishedMetaData?: PublishedMetadataType;
-  archivedMetaData?: ArchivedMetadataType;
-  deletedMetaData?: DeletedMetadataType;
-  //this should be enforced once we have user functionality because all products are created by a user so remove the optional '?'
-  createdBy?: Types.ObjectId;
+  statusHistory: StatusHistoryEntry[];
+  createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,36 +58,32 @@ export type IProductLean = LeanDocument<IProduct>;
 export interface ProductImage extends ImageMeta {
   _id: Types.ObjectId;
 }
-export interface PublishedMetadataType {
-  publishedAt: Date;
-  publishedBy: Types.ObjectId;
-}
-
-export interface ArchivedMetadataType {
-  archivedAt: Date;
-  archivedBy: Types.ObjectId;
-}
-
-export interface DeletedMetadataType {
-  deletedAt: Date;
-  deletedBy: Types.ObjectId;
-}
-
 export interface PriceType {
-  currency: string; // e.g., 'USD', 'LEU'
-  amount: number; // base price
+  currency: string;
+  amount: number;
 }
 
+export interface CompareAtPriceType {
+  original: PriceType;
+  expiresAt?: Date;
+}
 
+export interface PriceHistoryEntry {
+  price: PriceType;
+  changedAt: Date;
+  changedBy: string;
+}
 
 export interface ProductVariant {
   _id: Types.ObjectId;
   name: string;
   slug: string;
   sku: string;
-  productOptions?: ReadonlyMap<string, string>; // e.g., { color: 'red', size: 'M' }
-  price?: PriceType; // optional override
+  productOptions?: ReadonlyMap<string, string>;
+  price?: PriceType;
   costPrice?: PriceType;
+  compareAtPrice?: CompareAtPriceType;
+  priceHistory?: PriceHistoryEntry[];
   vatRate?: 5 | 9 | 21;
   images?: ProductImage[];
 }

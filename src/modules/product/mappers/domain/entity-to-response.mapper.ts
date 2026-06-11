@@ -66,25 +66,13 @@ export class ProductEntityToResponseDtoMapper {
 
       attributes: entity.attributes ?? null, // Optional object
 
-      publishedMetaData: entity.publishedMetaData
-        ? {
-            publishedAt: entity.publishedMetaData.publishedAt,
-            publishedBy: entity.publishedMetaData.publishedBy,
-          }
-        : undefined,
-      deletedMetaData: entity.deletedMetaData
-        ? {
-            deletedAt: entity.deletedMetaData.deletedAt,
-            deletedBy: entity.deletedMetaData.deletedBy,
-          }
-        : undefined,
-      archivedMetaData: entity.archivedMetaData
-        ? {
-            archivedAt: entity.archivedMetaData.archivedAt,
-            archivedBy: entity.archivedMetaData.archivedBy,
-          }
-        : undefined,
-      creatadBy: entity.createdBy ?? null,
+      statusHistory: entity.statusHistory.map((entry) => ({
+        status: entry.status,
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+        reason: entry.reason ?? null,
+      })),
+      createdBy: entity.createdBy,
       createdAt: entity.createdAt?.toISOString() ?? null,
       updatedAt: entity.updatedAt?.toISOString() ?? null,
     };

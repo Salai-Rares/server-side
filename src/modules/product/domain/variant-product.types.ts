@@ -12,6 +12,8 @@ export interface VariantProductProps {
   productOptions?: ReadonlyMap<string, string>;
   price?: PriceVO;
   costPrice?: PriceVO;
+  compareAtPrice?: { original: PriceVO; expiresAt?: Date };
+  priceHistory?: { price: PriceVO; changedAt: Date; changedBy: string }[];
   vatRate?: VatRateType;
   images?: ImageVO[];
 }

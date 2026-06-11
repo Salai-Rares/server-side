@@ -3,16 +3,15 @@ import mongoose, { Document, Schema, Model, Types } from "mongoose";
 import { SeoMetaSchema } from "../../../shared/models";
 
 import {
-  ArchivedMetadataType,
-  DeletedMetadataType,
-
+  CompareAtPriceType,
   IProduct,
   IProductDocument,
+  PriceHistoryEntry,
   PriceType,
   ProductImage,
   ProductVariant,
-  PublishedMetadataType,
   RatingSummary,
+  StatusHistoryEntry,
 } from "../types";
 import { validateAttributesSize } from "../validators";
 import {
@@ -31,6 +30,23 @@ const PriceSchema = new Schema<PriceType>(
   {
     currency: { type: String, required: true },
     amount: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const CompareAtPriceSchema = new Schema<CompareAtPriceType>(
+  {
+    original: { type: PriceSchema, required: true },
+    expiresAt: { type: Date },
+  },
+  { _id: false }
+);
+
+const PriceHistoryEntrySchema = new Schema<PriceHistoryEntry>(
+  {
+    price: { type: PriceSchema, required: true },
+    changedAt: { type: Date, required: true },
+    changedBy: { type: String, required: true },
   },
   { _id: false }
 );
@@ -57,6 +73,8 @@ const VariantSchema = new Schema<ProductVariant>({
   productOptions: { type: Map, of: String },
   price: { type: PriceSchema },
   costPrice: { type: PriceSchema },
+  compareAtPrice: { type: CompareAtPriceSchema },
+  priceHistory: { type: [PriceHistoryEntrySchema], default: [] },
   vatRate: {
     type: Number,
     enum: [5, 9, 21],
@@ -80,32 +98,14 @@ const AttributeSchema = new Schema<Filter>(
   },
   { _id: false }
 );
-const PublishedMetadataSchema = new Schema<PublishedMetadataType>(
+const StatusHistoryEntrySchema = new Schema<StatusHistoryEntry>(
   {
-    publishedAt: { type: Date, required: true },
-    //here change on required : true when user functionality is added
-    publishedBy: { type: Schema.Types.ObjectId, required: false },
+    status: { type: String, enum: PRODUCT_LIMITS.STATUS.POSSIBLE_VALUES, required: true },
+    changedAt: { type: Date, required: true },
+    changedBy: { type: String, required: true },
+    reason: { type: String },
   },
   { _id: false }
-);
-const ArchivedMetadataSchema = new Schema<ArchivedMetadataType>(
-  {
-    archivedAt: { type: Date, required: true },
-    //here change on required : true when user functionality is added
-    archivedBy: { type: Schema.Types.ObjectId, required: false },
-  },
-  { _id: false }
-);
-
-const DeletedMetadataSchema = new Schema<DeletedMetadataType>(
-  {
-    deletedAt: { type: Date, required: true },
-    //here change on required : true when user functionality is added
-    deletedBy: { type: Schema.Types.ObjectId, required: false },
-  },
-  {
-    _id: false,
-  }
 );
 //Main schema
 const ProductSchema = new Schema<IProductDocument>(
@@ -137,6 +137,8 @@ const ProductSchema = new Schema<IProductDocument>(
     images: { type: [ProductImageSchema] },
     price: { type: PriceSchema },
     costPrice: { type: PriceSchema },
+    compareAtPrice: { type: CompareAtPriceSchema },
+    priceHistory: { type: [PriceHistoryEntrySchema], default: [] },
     vatRate: {
       type: Number,
       enum: [5, 9, 21],
@@ -166,10 +168,8 @@ const ProductSchema = new Schema<IProductDocument>(
 
     attributes: { type: [AttributeSchema], default: [] },
     productOptions: { type: Map, of: String },
-    publishedMetaData: { type: PublishedMetadataSchema },
-    archivedMetaData: { type: ArchivedMetadataSchema },
-    deletedMetaData: { type: DeletedMetadataSchema },
-    createdBy : {type : Schema.Types.ObjectId}
+    statusHistory: { type: [StatusHistoryEntrySchema], default: [] },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
   },
   {
     timestamps: true,

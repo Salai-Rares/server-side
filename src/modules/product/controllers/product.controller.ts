@@ -11,7 +11,7 @@ import {
   withMiddleware,
 } from "inversify-express-utils";
 import { inject, injectable } from "inversify";
-import { TYPES } from "@/shared/types";
+import { CallerContext, TYPES } from "@/shared/types";
 import { isTruthy } from "../../../helpers";
 import { QueryFiltersObject } from "@/modules/product/types/product-query-filter.types";
 import { ICategoryService } from "../../category/types/category.service.types";
@@ -77,8 +77,9 @@ export class ProductController extends BaseHttpController {
       req.files as Express.Multer.File[]
     );
 
+    const caller: CallerContext = { userId: req.session.userId!, role: req.session.role! };
     const { product, inventories } =
-      await this.productCreateUseCase.createProductWithInventories(dto);
+      await this.productCreateUseCase.createProductWithInventories(dto, caller);
     const resultProduct = ProductEntityToResponseDtoMapper.toDto(product);
     const inventoriesResult = inventories?.map(
       InventoryEntityToResponseDtoMapper.toDto
@@ -119,7 +120,8 @@ const dto = UpdateProductRequestSchema.parse(req.body);
         req?.files as Express.Multer.File[]
       );
 
-      const {product,inventories} = await this.productUpdateUseCase.updateProductWithInventories(assembledResult)
+      const caller: CallerContext = { userId: req.session.userId!, role: req.session.role! };
+      const {product,inventories} = await this.productUpdateUseCase.updateProductWithInventories(assembledResult, caller)
     res.status(200).json({
       status: "success",
       data: { product},

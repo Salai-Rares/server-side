@@ -44,6 +44,7 @@ export class UserController extends BaseHttpController {
     const userDto: CreateUserHttpDto = CreateUserSchema.parse(req.body);
     const userEntity: UserEntity = await this.userRegisterUseCase.execute(userDto);
     req.session.userId = userEntity.id;
+    req.session.role = userEntity.role;
     delete req.session.guestId;
     res.status(HttpStatus.CREATED).json({ success: true, data: UserEntityToResponseMapper.toDto(userEntity) });
   }
@@ -56,6 +57,7 @@ export class UserController extends BaseHttpController {
       req.session.regenerate((err) => (err ? reject(err) : resolve()));
     });
     req.session.userId = userEntity.id;
+    req.session.role = userEntity.role;
     res.status(HttpStatus.OK).json({ success: true, data: UserEntityToResponseMapper.toDto(userEntity) });
   }
 

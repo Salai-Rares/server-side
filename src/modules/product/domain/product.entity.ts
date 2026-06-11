@@ -1,17 +1,12 @@
 import { ValidationError } from "@/shared/errors/ValidationError";
 import {
   ProductImage,
-  PublishedMetadataType,
   RatingSummary,
   VatRateType,
 } from "../types";
 import { AllUniqueKeyAndValuesFilters } from "../types/product-query-filter.types";
-import {
-  ProductProps,
-  PublishedMetadataVO,
-  DeletedMetadataVO,
-  ArchivedMetadataVO,
-} from "./product.types";
+import { ProductProps, StatusHistoryEntryVO } from "./product.types";
+import { EntityStatusType } from "@/core/domain/value-objects/status.value-objects";
 import { ProductDescriptionVO } from "./value-objects/description/description.value-object";
 import { ShortProductDescriptionVO } from "./value-objects/description/short-description.value-object";
 import { PriceVO } from "./value-objects/price.value-object";
@@ -56,6 +51,8 @@ export class ProductEntity implements ProductProps {
   private _images?: ImageVO[];
   private _price?: PriceVO;
   private _costPrice?: PriceVO;
+  private _compareAtPrice?: { original: PriceVO; expiresAt?: Date };
+  private _priceHistory: { price: PriceVO; changedAt: Date; changedBy: string }[];
   private _vatRate?: VatRateType;
   private _hasVariants: boolean;
   private _variants?: ProductVariantEntity[];
@@ -68,11 +65,9 @@ export class ProductEntity implements ProductProps {
   private _slug: SlugVO;
 
   private _productOptions?: ReadonlyMap<string, string>;
-  private _publishedMetaData?: PublishedMetadataVO;
-  private _deletedMetaData?: DeletedMetadataVO;
-  private _archivedMetaData?: ArchivedMetadataVO;
+  private _statusHistory: StatusHistoryEntryVO[];
 
-  private readonly _createdBy?:string;
+  private readonly _createdBy: string;
   private readonly _createdAt?: Date;
   private readonly _updatedAt?: Date;
   constructor(props: ProductProps) {
@@ -85,6 +80,9 @@ export class ProductEntity implements ProductProps {
     this._tags = props.tags;
     this._images = props.images;
     this._price = props.price;
+    this._costPrice = props.costPrice;
+    this._compareAtPrice = props.compareAtPrice;
+    this._priceHistory = props.priceHistory ?? [];
     this._variants = props.variants;
     this._hasVariants = this.calculateHasVariants();
 
@@ -96,6 +94,8 @@ export class ProductEntity implements ProductProps {
     this._attributes = props.attributes;
     this._slug = props.slug;
     this._name = props.name;
+    this._statusHistory = props.statusHistory ?? [];
+    this._createdBy = props.createdBy;
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
     this.validate();
@@ -164,6 +164,12 @@ export class ProductEntity implements ProductProps {
   get costPrice(): PriceVO | undefined {
     return this._costPrice;
   }
+  get compareAtPrice(): { original: PriceVO; expiresAt?: Date } | undefined {
+    return this._compareAtPrice;
+  }
+  get priceHistory(): { price: PriceVO; changedAt: Date; changedBy: string }[] {
+    return [...this._priceHistory];
+  }
 
   get vatRate(): VatRateType | undefined {
     return this._vatRate;
@@ -202,17 +208,11 @@ export class ProductEntity implements ProductProps {
   get productOptions(): ReadonlyMap<string, string> | undefined {
     return this._productOptions;
   }
-  get publishedMetaData() : PublishedMetadataVO | undefined {
-    return this._publishedMetaData;
+  get statusHistory(): StatusHistoryEntryVO[] {
+    return [...this._statusHistory];
   }
-  get archivedMetaData() : ArchivedMetadataVO | undefined {
-    return this._archivedMetaData;
-  }
-  get deletedMetaData() : DeletedMetadataVO | undefined {
-    return this._deletedMetaData;
-  }
-  get createdBy() : string | undefined {
-    return this._createdBy
+  get createdBy(): string {
+    return this._createdBy;
   }
   get createdAt(): Date | undefined {
     return this._createdAt;
@@ -430,6 +430,56 @@ export class ProductEntity implements ProductProps {
     this.changeTracker.mark("price");
   }
 
+  applyMarkdown(original: PriceVO, salePrice: PriceVO, changedBy: string, expiresAt?: Date): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule("compareAtPrice", "immutable_when_deleted", "Cannot apply markdown to deleted product", this._id);
+    }
+    if (salePrice.currency !== original.currency) {
+      throw ValidationError.domainRule("compareAtPrice", "currency_mismatch", "Sale price and compare-at price must use the same currency", { saleCurrency: salePrice.currency, originalCurrency: original.currency });
+    }
+    if (salePrice.amount >= original.amount) {
+      throw ValidationError.domainRule("compareAtPrice", "sale_price_not_lower", "Sale price must be lower than original price", { salePrice: salePrice.amount, original: original.amount });
+    }
+    this._compareAtPrice = { original, expiresAt };
+    this._price = salePrice;
+    this._priceHistory = [
+      ...this._priceHistory.slice(-(20 - 1)),
+      { price: salePrice, changedAt: new Date(), changedBy },
+    ];
+    this.changeTracker.mark("compareAtPrice");
+    this.changeTracker.mark("price");
+    this.changeTracker.mark("priceHistory");
+  }
+
+  removeMarkdown(changedBy: string): void {
+    if (this._status.isDeleted()) {
+      throw ValidationError.domainRule("compareAtPrice", "immutable_when_deleted", "Cannot remove markdown from deleted product", this._id);
+    }
+    if (!this._compareAtPrice) {
+      throw ValidationError.domainRule("compareAtPrice", "no_markdown", "No active markdown to remove", this._id);
+    }
+    const restoredPrice = this._compareAtPrice.original;
+    this._price = restoredPrice;
+    this._priceHistory = [
+      ...this._priceHistory.slice(-(20 - 1)),
+      { price: restoredPrice, changedAt: new Date(), changedBy },
+    ];
+    this._compareAtPrice = undefined;
+    this.changeTracker.mark("compareAtPrice");
+    this.changeTracker.mark("price");
+    this.changeTracker.mark("priceHistory");
+  }
+
+  transitionStatus(target: EntityStatusType, changedBy: string, reason?: string): void {
+    this._status = this._status.transitionTo(target);
+    this._statusHistory = [
+      ...this._statusHistory.slice(-(50 - 1)),
+      { status: target, changedAt: new Date(), changedBy, reason },
+    ];
+    this.changeTracker.mark("status");
+    this.changeTracker.mark("statusHistory");
+  }
+
   updateFeatured(isFeatured: boolean): void {
     if (this._status.isDeleted()) {
       throw ValidationError.domainRule(
@@ -609,7 +659,7 @@ export class ProductEntity implements ProductProps {
     this.changeTracker.mark("images");
   }
 
-  updateMultiple(updates: ProductDomainUpdateType): void {
+  updateMultiple(updates: ProductDomainUpdateType, changedBy: string): void {
     if (updates.name !== undefined) {
       this.updateName(updates.name);
     }
@@ -649,10 +699,42 @@ export class ProductEntity implements ProductProps {
       }
     }
 
-    if (updates.price !== undefined) {
+    if (updates.compareAtPrice !== undefined) {
+      if (updates.compareAtPrice === null) {
+        this.removeMarkdown(changedBy);
+        if (updates.price !== undefined) {
+          this.updatePrice(updates.price);
+        }
+      } else {
+        const originalPrice = new PriceVO(updates.compareAtPrice.original);
+        let salePrice: PriceVO;
+        if (updates.price !== undefined) {
+          const amount = updates.price.amount ?? this._price?.amount;
+          const currency = updates.price.currency ?? this._price?.currency;
+          if (amount === undefined || !currency) {
+            throw ValidationError.domainRule(
+              "price",
+              "missing_required_fields",
+              "Both amount and currency are required for the sale price when applying a markdown",
+              { productId: this._id }
+            );
+          }
+          salePrice = new PriceVO({ amount, currency });
+        } else if (this._price) {
+          salePrice = this._price;
+        } else {
+          throw ValidationError.domainRule(
+            "compareAtPrice",
+            "missing_price",
+            "A sale price is required to apply a markdown",
+            { productId: this._id }
+          );
+        }
+        this.applyMarkdown(originalPrice, salePrice, changedBy, updates.compareAtPrice.expiresAt);
+      }
+    } else if (updates.price !== undefined) {
       this.updatePrice(updates.price);
     }
-
 
     if (updates.isFeatured !== undefined) {
       if (updates.isFeatured === null) {

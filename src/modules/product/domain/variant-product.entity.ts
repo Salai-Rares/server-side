@@ -16,14 +16,18 @@ export class ProductVariantEntity implements VariantProductProps {
   private _slug: SlugVO;
   private _productOptions?: ReadonlyMap<string, string>;
   private _price?: PriceVO;
-  private _costPrice?:PriceVO;
-  private _vatRate?:VatRateType;
+  private _costPrice?: PriceVO;
+  private _compareAtPrice?: { original: PriceVO; expiresAt?: Date };
+  private _priceHistory: { price: PriceVO; changedAt: Date; changedBy: string }[];
+  private _vatRate?: VatRateType;
   private _images?: ImageVO[];
   constructor(props: VariantProductProps) {
     this._id = props.id;
     this._productOptions = props.productOptions;
     this._price = props.price;
     this._costPrice = props.costPrice;
+    this._compareAtPrice = props.compareAtPrice;
+    this._priceHistory = props.priceHistory ?? [];
     this._slug = props.slug;
     this._sku = props.sku;
     this._images = props.images;
@@ -46,8 +50,14 @@ export class ProductVariantEntity implements VariantProductProps {
     return this._price;
   }
 
-   get costPrice(): PriceVO | undefined {
+  get costPrice(): PriceVO | undefined {
     return this._costPrice;
+  }
+  get compareAtPrice(): { original: PriceVO; expiresAt?: Date } | undefined {
+    return this._compareAtPrice;
+  }
+  get priceHistory(): { price: PriceVO; changedAt: Date; changedBy: string }[] {
+    return [...this._priceHistory];
   }
   get vatRate(): VatRateType | undefined {
     return this._vatRate;
@@ -102,6 +112,31 @@ export class ProductVariantEntity implements VariantProductProps {
   }
   clearProductOptions(): void {
     this._productOptions = undefined;
+  }
+
+  applyMarkdown(original: PriceVO, salePrice: PriceVO, changedBy: string, expiresAt?: Date): void {
+    if (salePrice.amount >= original.amount) {
+      throw ValidationError.domainRule("compareAtPrice", "sale_price_not_lower", "Sale price must be lower than original price", { salePrice: salePrice.amount, original: original.amount });
+    }
+    this._compareAtPrice = { original, expiresAt };
+    this._price = salePrice;
+    this._priceHistory = [
+      ...this._priceHistory.slice(-(20 - 1)),
+      { price: salePrice, changedAt: new Date(), changedBy },
+    ];
+  }
+
+  removeMarkdown(changedBy: string): void {
+    if (!this._compareAtPrice) {
+      throw ValidationError.domainRule("compareAtPrice", "no_markdown", "No active markdown to remove", this._id);
+    }
+    const restoredPrice = this._compareAtPrice.original;
+    this._price = restoredPrice;
+    this._priceHistory = [
+      ...this._priceHistory.slice(-(20 - 1)),
+      { price: restoredPrice, changedAt: new Date(), changedBy },
+    ];
+    this._compareAtPrice = undefined;
   }
 
   updatePrice(priceUpdate: UpdatePriceType): void {

@@ -1,4 +1,5 @@
 import { mock, when, instance, verify, anything, reset } from "ts-mockito";
+import { UserRole } from "@/modules/users/domain/types/user.types";
 import { IInventoryRepositoryWrite } from "../../modules/inventory/types/create/inventory-create.repository.types";
 
 import { ProductCreateUseCase } from "@/modules/product/services/product-create.service";
@@ -31,7 +32,7 @@ describe("ProductCreateUseCase - Unit Tests", () => {
   it("throws if product has both root inventory and variants", async () => {
     const dto: CreateProductType = makeProductWithRootInventoryAndVariants();
     console.log("Test input DTO:", JSON.stringify(dto, null, 2));
-    await expect(useCase.createProductWithInventories(dto)).rejects.toThrow(
+    await expect(useCase.createProductWithInventories(dto, { userId: "test-user-id", role: UserRole.ADMIN })).rejects.toThrow(
       "Root product cannot have both variants and inventory"
     );
   });
@@ -45,7 +46,7 @@ describe("ProductCreateUseCase - Unit Tests", () => {
       expect.anything()
     );
 
-    await useCase.createProductWithInventories(dto);
+    await useCase.createProductWithInventories(dto, { userId: "test-user-id", role: UserRole.ADMIN });
 
     verify(productRepo.saveProduct(anything(), anything())).once();
     verify(inventoryServiceWrite.saveInventory(anything(), anything())).once();
@@ -60,7 +61,7 @@ describe("ProductCreateUseCase - Unit Tests", () => {
       expect.anything()
     );
 
-    await useCase.createProductWithInventories(dto);
+    await useCase.createProductWithInventories(dto, { userId: "test-user-id", role: UserRole.ADMIN });
 
     verify(productRepo.saveProduct(anything(), anything())).once();
     verify(inventoryServiceWrite.saveBulkInventories(anything(), anything())).once();
@@ -87,7 +88,7 @@ describe("ProductCreateUseCase - Unit Tests", () => {
       expect.anything()
     );
 
-    const result = await useCase.createProductWithInventories(dto);
+    const result = await useCase.createProductWithInventories(dto, { userId: "test-user-id", role: UserRole.ADMIN });
     
     // ✔ should retry saveProduct
     verify(productRepo.saveProduct(anything(), anything())).twice();

@@ -15,6 +15,17 @@ export class VariantProductFromPersistanceToEntity {
       sku: new ProductSkuVO(raw.sku),
       productOptions: raw.productOptions,
       ...(raw.price && { price: new PriceVO(raw.price) }),
+      compareAtPrice: raw.compareAtPrice
+        ? {
+            original: new PriceVO(raw.compareAtPrice.original),
+            expiresAt: raw.compareAtPrice.expiresAt,
+          }
+        : undefined,
+      priceHistory: (raw.priceHistory ?? []).map((entry) => ({
+        price: new PriceVO(entry.price),
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+      })),
       images: raw.images?.map((image) => ({
         id: image._id.toString(),
         url: image.url,

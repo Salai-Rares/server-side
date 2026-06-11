@@ -48,6 +48,20 @@ export class ProductFromPersistanceToEntityMapper {
             currency: dbData.costPrice.currency,
           })
         : undefined,
+      compareAtPrice: dbData.compareAtPrice
+        ? {
+            original: new PriceVO({
+              amount: dbData.compareAtPrice.original.amount,
+              currency: dbData.compareAtPrice.original.currency,
+            }),
+            expiresAt: dbData.compareAtPrice.expiresAt,
+          }
+        : undefined,
+      priceHistory: (dbData.priceHistory ?? []).map((entry) => ({
+        price: new PriceVO({ amount: entry.price.amount, currency: entry.price.currency }),
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+      })),
       vatRate: dbData.vatRate,
       variants: dbData.variants?.map(
         VariantProductFromPersistanceToEntity.fromPersistanceToEntity
@@ -60,26 +74,13 @@ export class ProductFromPersistanceToEntityMapper {
       attributes: dbData.attributes,
       slug: new SlugVO(dbData.slug),
 
-      publishedMetaData: dbData.publishedMetaData
-        ? {
-            publishedAt: dbData.publishedMetaData.publishedAt,
-            publishedBy: dbData.publishedMetaData.publishedBy.toHexString(),
-          }
-        : undefined,
-      archivedMetaData: dbData.archivedMetaData
-        ? {
-            archivedAt: dbData.archivedMetaData.archivedAt,
-            archivedBy: dbData.archivedMetaData.archivedBy.toHexString(),
-          }
-        : undefined,
-      deletedMetaData: dbData.deletedMetaData
-        ? {
-            deletedAt: dbData.deletedMetaData.deletedAt,
-            deletedBy: dbData.deletedMetaData.deletedBy.toHexString(),
-          }
-        : undefined,
-
-      createdBy: dbData.createdBy?.toHexString(),
+      statusHistory: (dbData.statusHistory ?? []).map((entry) => ({
+        status: entry.status,
+        changedAt: entry.changedAt,
+        changedBy: entry.changedBy,
+        reason: entry.reason,
+      })),
+      createdBy: dbData.createdBy.toHexString(),
       createdAt: dbData.createdAt,
       updatedAt: dbData.updatedAt,
     };
