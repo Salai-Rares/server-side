@@ -41,6 +41,8 @@ import { ProductCreateInputAssembler } from "./assemblers/product-create-input.a
 import { ProductUpdateCommand } from "../services/commands/product-update.command";
 import { ProductUpdateInputAssembler } from "./assemblers/product-update-input.assembler";
 import { ZodError } from "zod";
+import { UserRole } from "@/modules/users/domain/types/user.types";
+import { requireRole } from "@/middleware/http/require-role.middleware";
 const productsImageUpload = createMulterUpload({
   destination: path.resolve(__dirname, "../../../images/products"),
   mimetypes: {
@@ -61,45 +63,57 @@ export class ProductController extends BaseHttpController {
     private productCreateUseCase: IProductCreateService,
     @inject(TYPES.ProductUpdateUseCase)
     private productUpdateUseCase: IProductUpdateService,
-    @inject(TYPES.Logger) private logger: ILogger
+    @inject(TYPES.Logger) private logger: ILogger,
   ) {
     super();
   }
 
   @httpGet("/")
-  async getProducts(req:Request,res:Response){
-    res.status(200).json({status:"success"})
+  async getProducts(req: Request, res: Response) {
+    res.status(200).json({ status: "success" });
   }
-  @httpPost("/create", productsImageUpload.raw(), cleanupUploadedFiles)
+  @httpPost(
+    "/create",
+    requireRole(UserRole.ADMIN, UserRole.STAFF),
+    productsImageUpload.raw(),
+    cleanupUploadedFiles,
+  )
   async createProduct(req: ProcessedRequest, res: Response): Promise<void> {
     const dto = ProductCreateInputAssembler.assemble(
       req.body,
-      req.files as Express.Multer.File[]
+      req.files as Express.Multer.File[],
     );
 
-    const caller: CallerContext = { userId: req.session.userId!, role: req.session.role! };
+    const caller: CallerContext = {
+      userId: req.session.userId!,
+      role: req.session.role!,
+    };
     const { product, inventories } =
       await this.productCreateUseCase.createProductWithInventories(dto, caller);
     const resultProduct = ProductEntityToResponseDtoMapper.toDto(product);
     const inventoriesResult = inventories?.map(
-      InventoryEntityToResponseDtoMapper.toDto
+      InventoryEntityToResponseDtoMapper.toDto,
     );
     res
       .status(200)
       .json({ status: "success", data: { resultProduct, inventoriesResult } });
   }
 
-  @httpPatch("/:id", productsImageUpload.array("images"), cleanupUploadedFiles)
+  @httpPatch(
+    "/:id",
+    requireRole(UserRole.ADMIN, UserRole.STAFF),
+    productsImageUpload.array("images"),
+    cleanupUploadedFiles,
+  )
   async updateMultipleProductFields(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     const productId = req.params.id;
-  
-const dto = UpdateProductRequestSchema.parse(req.body);
-   
-    
+
+    const dto = UpdateProductRequestSchema.parse(req.body);
+
     const files = req.files as Express.Multer.File[];
     const uploadedMapSize = Object.keys(dto.uploadedMap || {}).length;
     const fileCount = files?.length ?? 0;
@@ -108,8 +122,8 @@ const dto = UpdateProductRequestSchema.parse(req.body);
       return next(
         ApiError.businessRuleViolation(
           `Uploaded file count mismatch: expected ${uploadedMapSize}, got ${fileCount}`,
-          "uploadedMap_equal_size_with_files"
-        )
+          "uploadedMap_equal_size_with_files",
+        ),
       );
     }
     //  const {product, inventories} = await this.productUpdateUseCase.updateProductWithInventories(productId,{dto,files})
@@ -117,14 +131,21 @@ const dto = UpdateProductRequestSchema.parse(req.body);
       ProductUpdateInputAssembler.assemble(
         productId,
         dto,
-        req?.files as Express.Multer.File[]
+        req?.files as Express.Multer.File[],
       );
 
-      const caller: CallerContext = { userId: req.session.userId!, role: req.session.role! };
-      const {product,inventories} = await this.productUpdateUseCase.updateProductWithInventories(assembledResult, caller)
+    const caller: CallerContext = {
+      userId: req.session.userId!,
+      role: req.session.role!,
+    };
+    const { product, inventories } =
+      await this.productUpdateUseCase.updateProductWithInventories(
+        assembledResult,
+        caller,
+      );
     res.status(200).json({
       status: "success",
-      data: { product},
+      data: { product },
     });
     return;
   }
@@ -132,7 +153,7 @@ const dto = UpdateProductRequestSchema.parse(req.body);
   @httpGet(
     "/queryies/:category/:subcategory?",
     TYPES.ValidateParam,
-    TYPES.ValidateAndSanitizeQueryFilters
+    TYPES.ValidateAndSanitizeQueryFilters,
   )
   async getFilters(req: Request, res: Response): Promise<void> {
     // Retrieve validated filters from the request-scoped storage
@@ -148,9 +169,8 @@ const dto = UpdateProductRequestSchema.parse(req.body);
       });
       return;
     }
-    const result = await this.filterService.getNextFiltersProduct(
-      validatedFilters
-    );
+    const result =
+      await this.filterService.getNextFiltersProduct(validatedFilters);
 
     // Respond with the result
     res.status(200).json({

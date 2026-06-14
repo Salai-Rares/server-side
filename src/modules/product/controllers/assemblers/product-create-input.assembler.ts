@@ -1,13 +1,27 @@
 import { CreateProductType, CreateProductSchema, ProductImageType } from "../../schemas";
-
+import { ApiError } from "@/shared/errors/api-error/ApiError";
 
 export class ProductCreateInputAssembler {
 static assemble(
   body: any,
   files: Express.Multer.File[]
 ): CreateProductType {
-  // Parse the JSON string BEFORE passing to Zod
-  const productData = JSON.parse(body.product); // ← ADD THIS
+  if (body.product == null) {
+    throw ApiError.badRequest(
+      'Missing "product" field. Send product data either as a JSON string or as nested form-data fields (product[name], product[sku], …).'
+    );
+  }
+
+  let productData: any;
+  if (typeof body.product === "string") {
+    try {
+      productData = JSON.parse(body.product);
+    } catch {
+      throw ApiError.badRequest('The "product" field is not valid JSON.');
+    }
+  } else {
+    productData = body.product;
+  }
   
   const processed = this.processUploadedProductImages(files, body);
 
