@@ -22,9 +22,13 @@ export interface IDiscountBase {
   usageLimit?: number;
   usageCount: number;
   active: boolean;
+  stackable: boolean;
+  excludeOnSale: boolean;
   priority: number;
   applicationMode: "automatic" | "code_required";
   conditions: DiscountConditionType[];
+  createdBy: Types.ObjectId;
+  createdAt: Date;
 }
 
 export interface IDiscount extends IDiscountBase {

@@ -1,24 +1,15 @@
-import { DiscountConditionType, DiscountZodType } from "../../schemas/discount.schema";
+import { DiscountZodType } from "../../schemas/discount.schema";
 import { DiscountProps } from "../discount-domain.types";
-import { DiscountEntity } from "../discount.entity";
 import { DiscountConditionFactory } from "../values/conditions/discount-condition.factory";
-import { DiscountConditionVO } from "../values/conditions/discount-condition.vo";
 
 export class DiscountDtoToEntity {
-  public static toEntity(dto: DiscountZodType, productName?: string, conditions?:DiscountConditionType[]): Omit<DiscountProps, "id"> {
-     const rawConditions = dto.conditions ?? conditions ?? [];
-
-    // convert to VO
-    const conditionsVo: DiscountConditionVO[] = rawConditions.map((c) =>
+  public static toEntity(dto: DiscountZodType, createdBy: string): Omit<DiscountProps, "id"> {
+    const conditions = dto.conditions.map((c) =>
       DiscountConditionFactory.create(c)
     );
 
-       // Fallback name if dto.name not provided
-    const generatedName =
-      dto.name ?? (productName ? `${productName}-discount` : "unnamed-discount");
-
     return {
-      name:generatedName,
+      name: dto.name,
       description: dto.description,
       type: dto.type,
       value: dto.value,
@@ -27,9 +18,12 @@ export class DiscountDtoToEntity {
       usageLimit: dto.usageLimit,
       usageCount: 0,
       active: dto.active,
+      stackable: dto.stackable,
+      excludeOnSale: dto.excludeOnSale,
+      createdBy,
       priority: dto.priority,
       applicationMode: dto.applicationMode,
-      conditions: conditionsVo,
+      conditions,
       createdAt: undefined,
       updatedAt: undefined,
     };

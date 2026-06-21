@@ -20,6 +20,8 @@ import { ValidateAndSanitizeQueryFilters } from "../../middleware/products/produ
 import { ValidateParam } from "../../middleware/products/product.middleware";
 import { ValidateCreateCategory } from "../../middleware/products/category.middleware";
 import { ProductController } from "../../modules/product/controllers/product.controller";
+import { DiscountController } from "../../modules/discount/controllers/discount.controller";
+import { CouponController } from "../../modules/coupon/controllers/coupon.controller";
 
 import { ErrorLogger } from "../../shared/errors/api-error/ErrorLogger";
 import { ErrorConverter } from "../../shared/errors/api-error/ErrorConverter";
@@ -70,6 +72,8 @@ export function buildApiContainer(): Container {
   // Controller
   container.bind<ProductController>(ProductController).toSelf();
   container.bind<UserController>(UserController).toSelf();
+  container.bind<DiscountController>(DiscountController).toSelf();
+  container.bind<CouponController>(CouponController).toSelf();
 
   // HTTP error pipeline
   container

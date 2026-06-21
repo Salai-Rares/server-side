@@ -52,8 +52,27 @@ import { InventoryDeleteUseCase } from "../../modules/inventory/services/invento
 
 import { IDiscountCreateRepository } from "../../modules/discount/repositories/types/discount-create.repository.types";
 import { CreateDiscountRepository } from "../../modules/discount/repositories/discount-create.repository";
+import { IDiscountReadRepository } from "../../modules/discount/repositories/types/discount-read.repository.types";
+import { DiscountReadRepository } from "../../modules/discount/repositories/discount-read.repository";
+import { IDiscountUpdateRepository } from "../../modules/discount/repositories/types/discount-update.repository.types";
+import { DiscountUpdateRepository } from "../../modules/discount/repositories/discount-update.repository";
 import { IDiscountCreateService } from "../../modules/discount/services/types/discount-create.service.types";
 import { CreateDiscountService } from "../../modules/discount/services/discount-create.service";
+import { IDiscountUpdateService } from "../../modules/discount/services/types/discount-update.service.types";
+import { UpdateDiscountService } from "../../modules/discount/services/discount-update.service";
+import { IDiscountEngine } from "../../modules/discount/engine/types/engine.types";
+import { DiscountEngine } from "../../modules/discount/engine/discount-engine";
+
+import { ICouponCreateRepository } from "../../modules/coupon/repositories/types/coupon-create.repository.types";
+import { CouponCreateRepository } from "../../modules/coupon/repositories/coupon-create.repository";
+import { ICouponReadRepository } from "../../modules/coupon/repositories/types/coupon-read.repository.types";
+import { CouponReadRepository } from "../../modules/coupon/repositories/coupon-read.repository";
+import { ICouponUpdateRepository } from "../../modules/coupon/repositories/types/coupon-update.repository.types";
+import { CouponUpdateRepository } from "../../modules/coupon/repositories/coupon-update.repository";
+import { ICouponCreateService } from "../../modules/coupon/services/types/coupon-create.service.types";
+import { CouponCreateService } from "../../modules/coupon/services/coupon-create.service";
+import { ICouponUpdateService } from "../../modules/coupon/services/types/coupon-update.service.types";
+import { CouponUpdateService } from "../../modules/coupon/services/coupon-update.service";
 
 import { ProductVariantUniquenessValidator } from "../../modules/product/validators/product-variant-uniqueness.validator";
 
@@ -167,8 +186,46 @@ export function applySharedBindings(container: Container): void {
     .to(CreateDiscountRepository)
     .inSingletonScope();
   container
+    .bind<IDiscountReadRepository>(TYPES.DiscountReadRepository)
+    .to(DiscountReadRepository)
+    .inSingletonScope();
+  container
+    .bind<IDiscountUpdateRepository>(TYPES.DiscountUpdateRepository)
+    .to(DiscountUpdateRepository)
+    .inSingletonScope();
+  container
     .bind<IDiscountCreateService>(TYPES.DiscountCreateService)
     .to(CreateDiscountService)
+    .inSingletonScope();
+  container
+    .bind<IDiscountUpdateService>(TYPES.DiscountUpdateService)
+    .to(UpdateDiscountService)
+    .inSingletonScope();
+  container
+    .bind<IDiscountEngine>(TYPES.DiscountEngine)
+    .to(DiscountEngine)
+    .inSingletonScope();
+
+  // Coupons
+  container
+    .bind<ICouponCreateRepository>(TYPES.CouponCreateRepository)
+    .to(CouponCreateRepository)
+    .inSingletonScope();
+  container
+    .bind<ICouponReadRepository>(TYPES.CouponReadRepository)
+    .to(CouponReadRepository)
+    .inSingletonScope();
+  container
+    .bind<ICouponUpdateRepository>(TYPES.CouponUpdateRepository)
+    .to(CouponUpdateRepository)
+    .inSingletonScope();
+  container
+    .bind<ICouponCreateService>(TYPES.CouponCreateService)
+    .to(CouponCreateService)
+    .inSingletonScope();
+  container
+    .bind<ICouponUpdateService>(TYPES.CouponUpdateService)
+    .to(CouponUpdateService)
     .inSingletonScope();
 
   // Validators

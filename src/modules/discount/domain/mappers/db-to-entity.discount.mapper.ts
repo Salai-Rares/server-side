@@ -8,7 +8,6 @@ export class DiscountPersistanceToEntity {
   ): DiscountEntity {
     const entity = new DiscountEntity({
       id: model._id.toHexString(),
-      createdAt: (model as any).createdAt, // only present if schema has timestamps
       updatedAt: (model as any).updatedAt,
       priority:model.priority,
       name: model.name,
@@ -20,7 +19,11 @@ export class DiscountPersistanceToEntity {
       usageLimit: model.usageLimit,
       usageCount: model.usageCount,
       active: model.active,
+      stackable: model.stackable,
+      excludeOnSale: model.excludeOnSale,
       applicationMode: model.applicationMode,
+      createdBy: model.createdBy.toHexString(),
+      createdAt: (model as any).createdAt,
       conditions: (model.conditions || []).map((c) =>
         DiscountConditionFactory.create(c)
       ),

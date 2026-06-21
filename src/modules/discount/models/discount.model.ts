@@ -66,8 +66,12 @@ const DiscountSchema = new Schema<IDiscountDocument>({
   usageLimit: { type: Number },
   usageCount: { type: Number, required: true, default: 0 },
   active: { type: Boolean, default: false },
-  conditions: { type: [ConditionSchema], min: 1,required:true },
-});
+  stackable: { type: Boolean, default: false },
+  excludeOnSale: { type: Boolean, default: false },
+  priority: { type: Number, required: true, min: 0, max: 3 },
+  conditions: { type: [ConditionSchema], min: 1, required: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
 
 const DiscountModel: Model<IDiscountDocument> =
   mongoose.model<IDiscountDocument>("Discount", DiscountSchema);

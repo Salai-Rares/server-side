@@ -1,16 +1,8 @@
 import { BuyXGetYValue, DiscountProps } from "./discount-domain.types";
-import { DiscountConditionType } from "../types/discount.types";
 import { ValidationError } from "@/shared/errors/ValidationError";
 import { ChangeTracker } from "@/shared/services/change-tracker";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { DataKeys } from "@/shared/types/data-keys-entities.types";
-import {
-  CONDITION_TYPE_OPERATORS,
-  CONDITION_VALUE_TYPES,
-  getExpectedValueType,
-  getValidOperators,
-  isValidTypeOperatorCombination,
-} from "../constants/discount-conditions";
 import { DiscountConditionVO } from "./values/conditions/discount-condition.vo";
 
 type ReadonlyFields = "id" | "createdAt" | "updatedAt";
@@ -27,6 +19,7 @@ export class DiscountEntity implements DiscountProps {
   > = new ChangeTracker();
 
   private readonly _id: string;
+  private readonly _createdBy: string;
   private readonly _createdAt?: Date;
   private readonly _updatedAt?: Date;
 
@@ -39,6 +32,8 @@ export class DiscountEntity implements DiscountProps {
   private _usageLimit?: number;
   private _usageCount: number;
   private _active: boolean;
+  private _stackable: boolean;
+  private _excludeOnSale: boolean;
   private _conditions: DiscountConditionVO[];
   private _priority: number;
   private readonly _applicationMode: "automatic" | "code_required";
@@ -49,6 +44,7 @@ export class DiscountEntity implements DiscountProps {
 
   constructor(props: DiscountProps) {
     this._id = props.id;
+    this._createdBy = props.createdBy;
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
     this._name = props.name;
@@ -60,6 +56,8 @@ export class DiscountEntity implements DiscountProps {
     this._usageLimit = props.usageLimit;
     this._usageCount = props.usageCount;
     this._active = props.active;
+    this._stackable = props.stackable;
+    this._excludeOnSale = props.excludeOnSale;
     this._conditions = props.conditions ?? [];
     this._priority = props.priority;
     this._applicationMode = props.applicationMode;
@@ -134,6 +132,20 @@ export class DiscountEntity implements DiscountProps {
       }
     }
 
+    if (this._type === "buy_x_get_y") {
+      const hasItemCondition = this._conditions.some((c) =>
+        DiscountEntity.ITEM_CONDITION_TYPES.has(c.type)
+      );
+      if (!hasItemCondition) {
+        throw ValidationError.domainRule(
+          "conditions",
+          "buy_x_get_y_requires_item_condition",
+          "buy_x_get_y discounts must target specific items — add at least one product, variant, or category condition",
+          this._id
+        );
+      }
+    }
+
     if (this._endDate <= this._startDate) {
       throw ValidationError.domainRule("dates", "date_order", "End date must be after start date", this._id);
     }
@@ -149,6 +161,7 @@ export class DiscountEntity implements DiscountProps {
 
   // Getters
   public get id() { return this._id; }
+  public get createdBy() { return this._createdBy; }
   public get createdAt() { return this._createdAt; }
   public get updatedAt() { return this._updatedAt; }
   public get name() { return this._name; }
@@ -160,7 +173,9 @@ export class DiscountEntity implements DiscountProps {
   public get usageLimit() { return this._usageLimit; }
   public get usageCount() { return this._usageCount; }
   public get active() { return this._active; }
-  public get conditions() { return this._conditions; }
+  public get stackable() { return this._stackable; }
+  public get excludeOnSale() { return this._excludeOnSale; }
+  public get conditions(): DiscountConditionVO[] { return [...this._conditions]; }
   public get priority() { return this._priority; }
   public get applicationMode() { return this._applicationMode; }
 

@@ -47,4 +47,13 @@ export const TYPES = {
    ConfirmationTokenService:Symbol.for("ConfirmationTokenService"),
   IdGenerator:Symbol.for("IdGenerator"),
 
+  DiscountReadRepository: Symbol.for("DiscountReadRepository"),
+  DiscountUpdateRepository: Symbol.for("DiscountUpdateRepository"),
+  CouponCreateRepository: Symbol.for("CouponCreateRepository"),
+  CouponReadRepository: Symbol.for("CouponReadRepository"),
+  CouponUpdateRepository: Symbol.for("CouponUpdateRepository"),
+  CouponCreateService: Symbol.for("CouponCreateService"),
+  CouponUpdateService: Symbol.for("CouponUpdateService"),
+  DiscountUpdateService: Symbol.for("DiscountUpdateService"),
+  DiscountEngine: Symbol.for("DiscountEngine"),
 };

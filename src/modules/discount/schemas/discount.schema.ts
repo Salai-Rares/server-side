@@ -53,7 +53,7 @@ export const ConditionZodSchema = z.union([
 ]);
 
 const DiscountBaseSchema = z.object({
-  name: z.string().min(5).optional(),
+  name: z.string().min(5),
   description: z.string().min(10).optional(),
   startDate: z.preprocess(
     (val) => (val ? new Date(val as string) : undefined),
@@ -65,8 +65,10 @@ const DiscountBaseSchema = z.object({
   ),
   usageLimit: z.coerce.number().min(1).optional(),
   active: z.boolean().default(false),
+  stackable: z.boolean().default(false),
+  excludeOnSale: z.boolean().default(false),
   applicationMode: z.enum(["automatic", "code_required"]),
-  conditions: z.array(ConditionZodSchema).optional(),
+  conditions: z.array(ConditionZodSchema).min(1),
   priority: z.coerce.number().min(0).max(3),
 });
 

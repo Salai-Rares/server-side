@@ -20,8 +20,11 @@ export interface DiscountProps {
   usageLimit?: number;
   usageCount: number;
   active: boolean;
+  stackable: boolean;
+  excludeOnSale: boolean;
   priority: number;
   conditions: DiscountConditionVO[];
+  createdBy: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
