@@ -58,4 +58,5 @@ export const TYPES = {
   DiscountEngine: Symbol.for("DiscountEngine"),
   CartRepository: Symbol.for("CartRepository"),
   CartService: Symbol.for("CartService"),
+  CartCatalogAvailability: Symbol.for("CartCatalogAvailability"),
 };

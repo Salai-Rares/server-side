@@ -78,6 +78,8 @@ import { ICartRepository } from "../../modules/cart/repositories/types/cart.repo
 import { CartRepository } from "../../modules/cart/repositories/cart.repository";
 import { ICartService } from "../../modules/cart/services/types/cart.service.types";
 import { CartService } from "../../modules/cart/services/cart.service";
+import { ICatalogAvailabilityPort } from "../../modules/cart/services/ports/catalog-availability.port";
+import { CatalogAvailabilityAdapter } from "../../modules/cart/adapters/catalog-availability.adapter";
 
 import { ProductVariantUniquenessValidator } from "../../modules/product/validators/product-variant-uniqueness.validator";
 
@@ -215,6 +217,10 @@ export function applySharedBindings(container: Container): void {
   container
     .bind<ICartRepository>(TYPES.CartRepository)
     .to(CartRepository)
+    .inSingletonScope();
+  container
+    .bind<ICatalogAvailabilityPort>(TYPES.CartCatalogAvailability)
+    .to(CatalogAvailabilityAdapter)
     .inSingletonScope();
   container
     .bind<ICartService>(TYPES.CartService)

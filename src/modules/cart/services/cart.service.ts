@@ -3,8 +3,7 @@ import { TYPES } from "@/shared/types";
 import { CartEntity } from "../domain/cart.entity";
 import { CartOwner } from "../domain/cart-domain.types";
 import { ICartRepository } from "../repositories/types/cart.repository.types";
-import { IProductRepositoryRead } from "@/modules/product/types/read/product-read.repository.types";
-import { IInventoryRepositoryRead } from "@/modules/inventory/types/read/inventory-read.repository.types";
+import { ICatalogAvailabilityPort } from "./ports/catalog-availability.port";
 import { IIdGenerator } from "@/core/application/ports/id/id-generator.interface";
 import { ICartService } from "./types/cart.service.types";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
@@ -13,10 +12,8 @@ export class CartService implements ICartService {
   constructor(
     @inject(TYPES.CartRepository)
     private cartRepo: ICartRepository,
-    @inject(TYPES.ProductReadRepository)
-    private productRepo: IProductRepositoryRead,
-    @inject(TYPES.InventoryRepositoryRead)
-    private inventoryRepo: IInventoryRepositoryRead,
+    @inject(TYPES.CartCatalogAvailability)
+    private catalog: ICatalogAvailabilityPort,
     @inject(TYPES.IdGenerator)
     private idGenerator: IIdGenerator
   ) {}
@@ -32,17 +29,10 @@ export class CartService implements ICartService {
     quantity: number,
     variantId?: string
   ): Promise<CartEntity> {
-    const product = await this.productRepo.findProductById(productId);
-    if (!product) throw ApiError.notFound("Product not found");
-
-    if (variantId) {
-      product.getVariantById(variantId);
-    }
-
-    const inventory = await this.inventoryRepo.findInventoryByReferences(productId, variantId);
-    if (!inventory || !inventory.inStock) {
-      throw ApiError.badRequest("Product is out of stock");
-    }
+    const availability = await this.catalog.checkAvailability(productId, variantId);
+    if (!availability.productExists) throw ApiError.notFound("Product not found");
+    if (!availability.variantExists) throw ApiError.notFound("Product variant not found");
+    if (!availability.inStock) throw ApiError.badRequest("Product is out of stock");
 
     const cart = await this.getOrCreateCart(owner);
     cart.addItem(productId, quantity, variantId);
