@@ -74,6 +74,11 @@ import { CouponCreateService } from "../../modules/coupon/services/coupon-create
 import { ICouponUpdateService } from "../../modules/coupon/services/types/coupon-update.service.types";
 import { CouponUpdateService } from "../../modules/coupon/services/coupon-update.service";
 
+import { ICartRepository } from "../../modules/cart/repositories/types/cart.repository.types";
+import { CartRepository } from "../../modules/cart/repositories/cart.repository";
+import { ICartService } from "../../modules/cart/services/types/cart.service.types";
+import { CartService } from "../../modules/cart/services/cart.service";
+
 import { ProductVariantUniquenessValidator } from "../../modules/product/validators/product-variant-uniqueness.validator";
 
 import { IEmailService } from "../../core/application/ports/email/email-service.interface";
@@ -204,6 +209,16 @@ export function applySharedBindings(container: Container): void {
   container
     .bind<IDiscountEngine>(TYPES.DiscountEngine)
     .to(DiscountEngine)
+    .inSingletonScope();
+
+  // Cart
+  container
+    .bind<ICartRepository>(TYPES.CartRepository)
+    .to(CartRepository)
+    .inSingletonScope();
+  container
+    .bind<ICartService>(TYPES.CartService)
+    .to(CartService)
     .inSingletonScope();
 
   // Coupons

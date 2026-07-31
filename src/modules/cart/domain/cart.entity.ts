@@ -87,6 +87,20 @@ export class CartEntity {
     existing.quantity = quantity;
   }
 
+  public mergeItems(incomingItems: CartItemProps[]): void {
+    for (const incoming of incomingItems) {
+      const key = this.itemKey(incoming.productId, incoming.variantId);
+      const existing = this._items.find((i) => this.itemKey(i.productId, i.variantId) === key);
+
+      if (existing) {
+        existing.quantity = incoming.quantity;
+      } else {
+        if (this._items.length >= MAX_CART_ITEMS) continue;
+        this._items.push({ ...incoming });
+      }
+    }
+  }
+
   public clear(): void {
     this._items = [];
   }

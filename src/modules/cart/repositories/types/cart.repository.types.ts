@@ -1,8 +1,9 @@
 import { CartEntity } from "../../domain/cart.entity";
+import { CartOwner } from "../../domain/cart-domain.types";
 
 export interface ICartRepository {
-  findByUserId(userId: string): Promise<CartEntity | null>;
-  findByGuestId(guestId: string): Promise<CartEntity | null>;
+  findByOwner(owner: CartOwner): Promise<CartEntity | null>;
+  findOrCreate(owner: CartOwner, newCartId: string): Promise<CartEntity>;
   save(entity: CartEntity): Promise<CartEntity>;
   delete(id: string): Promise<void>;
 }

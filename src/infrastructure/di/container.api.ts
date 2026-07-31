@@ -22,6 +22,7 @@ import { ValidateCreateCategory } from "../../middleware/products/category.middl
 import { ProductController } from "../../modules/product/controllers/product.controller";
 import { DiscountController } from "../../modules/discount/controllers/discount.controller";
 import { CouponController } from "../../modules/coupon/controllers/coupon.controller";
+import { CartController } from "../../modules/cart/controllers/cart.controller";
 
 import { ErrorLogger } from "../../shared/errors/api-error/ErrorLogger";
 import { ErrorConverter } from "../../shared/errors/api-error/ErrorConverter";
@@ -74,6 +75,7 @@ export function buildApiContainer(): Container {
   container.bind<UserController>(UserController).toSelf();
   container.bind<DiscountController>(DiscountController).toSelf();
   container.bind<CouponController>(CouponController).toSelf();
+  container.bind<CartController>(CartController).toSelf();
 
   // HTTP error pipeline
   container

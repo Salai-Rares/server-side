@@ -1,3 +1,5 @@
+export type CartOwner = { userId: string } | { guestId: string };
+
 export interface CartItemProps {
   productId: string;
   variantId?: string;

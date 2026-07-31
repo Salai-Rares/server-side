@@ -56,4 +56,6 @@ export const TYPES = {
   CouponUpdateService: Symbol.for("CouponUpdateService"),
   DiscountUpdateService: Symbol.for("DiscountUpdateService"),
   DiscountEngine: Symbol.for("DiscountEngine"),
+  CartRepository: Symbol.for("CartRepository"),
+  CartService: Symbol.for("CartService"),
 };
