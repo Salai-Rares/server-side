@@ -48,8 +48,20 @@ export class CartEntity {
   public get itemCount() { return this._items.length; }
   public get totalQuantity() { return this._items.reduce((s, i) => s + i.quantity, 0); }
 
+  /**
+   * Composite on purpose. Keying on the variant alone would let a caller address
+   * a line with a productId that does not own that variant, since the productId
+   * would never be compared.
+   */
   private itemKey(productId: string, variantId?: string): string {
-    return variantId ?? productId;
+    return `${productId}:${variantId ?? ""}`;
+  }
+
+  /** Units already on this line, or 0. addItem adds to this rather than replacing it. */
+  public quantityOf(productId: string, variantId?: string): number {
+    const key = this.itemKey(productId, variantId);
+    const existing = this._items.find((i) => this.itemKey(i.productId, i.variantId) === key);
+    return existing?.quantity ?? 0;
   }
 
   public addItem(productId: string, quantity: number, variantId?: string): void {

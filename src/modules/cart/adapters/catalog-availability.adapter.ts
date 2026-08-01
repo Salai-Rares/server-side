@@ -13,6 +13,7 @@ const PRODUCT_MISSING: ItemAvailability = {
   productExists: false,
   variantExists: false,
   inStock: false,
+  availableQuantity: 0,
 };
 
 /**
@@ -35,7 +36,12 @@ export class CatalogAvailabilityAdapter implements ICatalogAvailabilityPort {
     if (!product) return PRODUCT_MISSING;
 
     if (variantId && !this.hasVariant(product, variantId)) {
-      return { productExists: true, variantExists: false, inStock: false };
+      return {
+        productExists: true,
+        variantExists: false,
+        inStock: false,
+        availableQuantity: 0,
+      };
     }
 
     const inventory = await this.inventoryRepo.findInventoryByReferences(
@@ -47,6 +53,7 @@ export class CatalogAvailabilityAdapter implements ICatalogAvailabilityPort {
       productExists: true,
       variantExists: true,
       inStock: Boolean(inventory?.inStock),
+      availableQuantity: inventory?.stock ?? 0,
     };
   }
 

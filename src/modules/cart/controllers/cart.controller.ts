@@ -16,6 +16,13 @@ const AddItemSchema = z.object({
 
 const UpdateQuantitySchema = z.object({
   quantity: z.coerce.number().int().min(1),
+});
+
+/**
+ * Identifies which existing line a request addresses. Kept in the query string
+ * so PATCH and DELETE target a line identically — DELETE cannot rely on a body.
+ */
+const ItemTargetSchema = z.object({
   variantId: z.string().optional(),
 });
 
@@ -70,14 +77,15 @@ export class CartController extends BaseHttpController {
 
   @httpPatch("/items/:productId")
   async updateQuantity(req: Request, res: Response): Promise<void> {
-    const { quantity, variantId } = UpdateQuantitySchema.parse(req.body);
+    const { quantity } = UpdateQuantitySchema.parse(req.body);
+    const { variantId } = ItemTargetSchema.parse(req.query);
     const cart = await this.cartService.updateQuantity(this.getOwner(req), req.params.productId, quantity, variantId);
     res.status(200).json({ status: "success", data: { cart: toCartResponse(cart) } });
   }
 
   @httpDelete("/items/:productId")
   async removeItem(req: Request, res: Response): Promise<void> {
-    const variantId = req.query.variantId as string | undefined;
+    const { variantId } = ItemTargetSchema.parse(req.query);
     const cart = await this.cartService.removeItem(this.getOwner(req), req.params.productId, variantId);
     res.status(200).json({ status: "success", data: { cart: toCartResponse(cart) } });
   }

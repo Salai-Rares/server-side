@@ -11,8 +11,16 @@ export interface ItemAvailability {
   /** True when the requested variant exists, or when no variant was requested. */
   variantExists: boolean;
   inStock: boolean;
+  /** Units on hand. Advisory only — see the note on checkAvailability. */
+  availableQuantity: number;
 }
 
 export interface ICatalogAvailabilityPort {
+  /**
+   * A point-in-time read, not a reservation. Stock can change between this call
+   * and checkout, so the result is good enough to keep obviously-impossible
+   * lines out of the cart but is not an authoritative promise of supply — that
+   * check belongs at order placement, against reserved stock.
+   */
   checkAvailability(productId: string, variantId?: string): Promise<ItemAvailability>;
 }

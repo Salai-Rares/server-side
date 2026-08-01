@@ -3,7 +3,7 @@ import { TYPES } from "@/shared/types";
 import { CartEntity } from "../domain/cart.entity";
 import { CartOwner } from "../domain/cart-domain.types";
 import { ICartRepository } from "../repositories/types/cart.repository.types";
-import { ICatalogAvailabilityPort } from "./ports/catalog-availability.port";
+import { ICatalogAvailabilityPort, ItemAvailability } from "./ports/catalog-availability.port";
 import { IIdGenerator } from "@/core/application/ports/id/id-generator.interface";
 import { ICartService } from "./types/cart.service.types";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
@@ -30,11 +30,14 @@ export class CartService implements ICartService {
     variantId?: string
   ): Promise<CartEntity> {
     const availability = await this.catalog.checkAvailability(productId, variantId);
-    if (!availability.productExists) throw ApiError.notFound("Product not found");
-    if (!availability.variantExists) throw ApiError.notFound("Product variant not found");
-    if (!availability.inStock) throw ApiError.badRequest("Product is out of stock");
+    this.assertAvailable(availability);
 
     const cart = await this.getOrCreateCart(owner);
+    // addItem accumulates, so the line total is what has to fit in stock —
+    // not the delta the shopper just asked for.
+    const lineTotal = cart.quantityOf(productId, variantId) + quantity;
+    this.assertQuantityInStock(lineTotal, availability.availableQuantity);
+
     cart.addItem(productId, quantity, variantId);
     return this.cartRepo.save(cart);
   }
@@ -55,6 +58,11 @@ export class CartService implements ICartService {
     quantity: number,
     variantId?: string
   ): Promise<CartEntity> {
+    const availability = await this.catalog.checkAvailability(productId, variantId);
+    this.assertAvailable(availability);
+    // Absolute set, so the requested quantity is the line total.
+    this.assertQuantityInStock(quantity, availability.availableQuantity);
+
     const cart = await this.requireCart(owner);
     cart.updateQuantity(productId, quantity, variantId);
     return this.cartRepo.save(cart);
@@ -83,6 +91,20 @@ export class CartService implements ICartService {
   /** Only for operations where a cart coming into existence is meaningful. */
   private getOrCreateCart(owner: CartOwner): Promise<CartEntity> {
     return this.cartRepo.findOrCreate(owner, this.idGenerator.generate());
+  }
+
+  private assertAvailable(availability: ItemAvailability): void {
+    if (!availability.productExists) throw ApiError.notFound("Product not found");
+    if (!availability.variantExists) throw ApiError.notFound("Product variant not found");
+    if (!availability.inStock) throw ApiError.badRequest("Product is out of stock");
+  }
+
+  private assertQuantityInStock(lineTotal: number, availableQuantity: number): void {
+    if (lineTotal > availableQuantity) {
+      throw ApiError.badRequest(
+        `Only ${availableQuantity} in stock, ${lineTotal} requested`
+      );
+    }
   }
 
   private async requireCart(owner: CartOwner): Promise<CartEntity> {
