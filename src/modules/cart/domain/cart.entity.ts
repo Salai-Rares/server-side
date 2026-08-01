@@ -93,8 +93,12 @@ export class CartEntity {
       const existing = this._items.find((i) => this.itemKey(i.productId, i.variantId) === key);
 
       if (existing) {
+        // Guest quantity wins: it is the shopper's most recent intent for this
+        // line, so it replaces the account cart's quantity rather than adding.
         existing.quantity = incoming.quantity;
       } else {
+        // Capping silently rather than throwing: merge runs during login, and
+        // an over-full cart must not stop the shopper from signing in.
         if (this._items.length >= MAX_CART_ITEMS) continue;
         this._items.push({ ...incoming });
       }

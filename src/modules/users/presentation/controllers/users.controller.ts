@@ -17,6 +17,7 @@ import { IUserLoginUseCase } from "../../application/use-cases/login/user-login.
 import { IForgotPasswordUseCase } from "../../application/use-cases/forgot-password/forgot-password.use-case.interface";
 import { IResetPasswordUseCase } from "../../application/use-cases/reset-password/reset-password.use-case.interface";
 import { IVerifyEmailUseCase } from "../../application/use-cases/verify-email/verify-email.use-case.interface";
+import { IGuestSessionHandover } from "../../application/ports/guest-session-handover.port";
 import { UserEntity } from "../../domain/entities/user.entity";
 import { HttpStatus } from "@/constants/errors.constants";
 import { UserEntityToResponseMapper } from "../../infrastructure/mappers/entity-to-response.mapper";
@@ -34,7 +35,9 @@ export class UserController extends BaseHttpController {
     @inject(USERS_TYPES.ResetPasswordUseCase)
     private resetPasswordUseCase: IResetPasswordUseCase,
     @inject(USERS_TYPES.VerifyEmailUseCase)
-    private verifyEmailUseCase: IVerifyEmailUseCase
+    private verifyEmailUseCase: IVerifyEmailUseCase,
+    @inject(USERS_TYPES.GuestSessionHandover)
+    private guestSessionHandover: IGuestSessionHandover
   ) {
     super();
   }
@@ -43,9 +46,11 @@ export class UserController extends BaseHttpController {
   async createUser(req: Request, res: Response) {
     const userDto: CreateUserHttpDto = CreateUserSchema.parse(req.body);
     const userEntity: UserEntity = await this.userRegisterUseCase.execute(userDto);
+    const guestId = req.session.guestId;
     req.session.userId = userEntity.id;
     req.session.role = userEntity.role;
     delete req.session.guestId;
+    if (guestId) await this.guestSessionHandover.handOver(userEntity.id, guestId);
     res.status(HttpStatus.CREATED).json({ success: true, data: UserEntityToResponseMapper.toDto(userEntity) });
   }
 
@@ -53,11 +58,14 @@ export class UserController extends BaseHttpController {
   async login(req: Request, res: Response) {
     const dto: LoginHttpDto = LoginSchema.parse(req.body);
     const userEntity: UserEntity = await this.userLoginUseCase.execute(dto);
+    // Read before regenerate(): it discards the guest session along with its id.
+    const guestId = req.session.guestId;
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => (err ? reject(err) : resolve()));
     });
     req.session.userId = userEntity.id;
     req.session.role = userEntity.role;
+    if (guestId) await this.guestSessionHandover.handOver(userEntity.id, guestId);
     res.status(HttpStatus.OK).json({ success: true, data: UserEntityToResponseMapper.toDto(userEntity) });
   }
 

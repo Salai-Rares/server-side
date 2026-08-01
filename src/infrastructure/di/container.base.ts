@@ -80,6 +80,9 @@ import { ICartService } from "../../modules/cart/services/types/cart.service.typ
 import { CartService } from "../../modules/cart/services/cart.service";
 import { ICatalogAvailabilityPort } from "../../modules/cart/services/ports/catalog-availability.port";
 import { CatalogAvailabilityAdapter } from "../../modules/cart/adapters/catalog-availability.adapter";
+import { IGuestSessionHandover } from "../../modules/users/application/ports/guest-session-handover.port";
+import { CartGuestSessionHandoverAdapter } from "../../modules/cart/adapters/guest-session-handover.adapter";
+import { USERS_TYPES } from "../../modules/users/infrastructure/di/users.symbols";
 
 import { ProductVariantUniquenessValidator } from "../../modules/product/validators/product-variant-uniqueness.validator";
 
@@ -225,6 +228,12 @@ export function applySharedBindings(container: Container): void {
   container
     .bind<ICartService>(TYPES.CartService)
     .to(CartService)
+    .inSingletonScope();
+  // Cart satisfies a port owned by users; bound here so neither module has to
+  // import the other's DI wiring.
+  container
+    .bind<IGuestSessionHandover>(USERS_TYPES.GuestSessionHandover)
+    .to(CartGuestSessionHandoverAdapter)
     .inSingletonScope();
 
   // Coupons
