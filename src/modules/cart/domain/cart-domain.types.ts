@@ -12,6 +12,12 @@ export interface CartProps {
   userId?: string;
   guestId?: string;
   items: CartItemProps[];
+  /**
+   * Optimistic concurrency token, as read from storage. Required: an entity is
+   * only ever built from a persisted document, and a save cannot be made safe
+   * without knowing which revision it started from.
+   */
+  version: number;
   createdAt?: Date;
   updatedAt?: Date;
 }

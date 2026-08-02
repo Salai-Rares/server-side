@@ -11,6 +11,7 @@ export interface ICartBase {
   userId?: Types.ObjectId;
   guestId?: string;
   items: ICartItemBase[];
+  version: number;
 }
 
 export interface ICart extends ICartBase {

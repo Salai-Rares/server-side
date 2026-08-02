@@ -1,5 +1,6 @@
 import { apiContainer } from "@/infrastructure/di/container.api";
 import { TYPES } from "@/shared/types";
+import { SESSION_TTL_MS } from "@/constants";
 import connectRedis from "connect-redis";
 import session from "express-session";
 import { Redis as RedisType } from "ioredis";
@@ -17,9 +18,7 @@ export const sessionMiddleware = session({
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: process.env.NODE_ENV === "production"
-      ? 1000 * 60 * 60 * 24 * 7  // 7 days
-      : 1000 * 60 * 60 * 5,           // 5 hours for development/testing
+    maxAge: SESSION_TTL_MS,
   },
 });
 

@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { toObjectId } from "@/shared/utils";
 import { MongoErrorUtils } from "@/shared/errors/MongoValidationError";
+import { CartVersionConflictError } from "../errors/cart-version-conflict.error";
 import { CartEntity } from "../domain/cart.entity";
 import { CartOwner } from "../domain/cart-domain.types";
 import { CartPersistenceToEntity } from "../domain/mappers/db-to-entity.cart.mapper";
@@ -33,7 +34,14 @@ export class CartRepository implements ICartRepository {
     try {
       const doc = await CartModel.findOneAndUpdate(
         filter,
-        { $setOnInsert: { ...filter, _id: toObjectId(newCartId), items: [] } },
+        {
+          $setOnInsert: {
+            ...filter,
+            _id: toObjectId(newCartId),
+            items: [],
+            version: 0,
+          },
+        },
         { upsert: true, new: true }
       ).lean();
       return CartPersistenceToEntity.fromPersistenceToEntity(doc as any);
@@ -47,13 +55,24 @@ export class CartRepository implements ICartRepository {
     }
   }
 
+  /**
+   * Optimistic write: the filter pins the revision this entity was read at, so a
+   * save built from stale items matches nothing rather than overwriting whoever
+   * got there first. No upsert — with a version in the filter a mismatch would
+   * insert a second cart instead of failing.
+   */
   async save(entity: CartEntity): Promise<CartEntity> {
-    const data = CartEntityToPersistenceMapper.toPersistence(entity);
-    const doc = await CartModel.findByIdAndUpdate(
-      data._id,
-      { $set: data },
-      { new: true, upsert: true }
+    // _id stays in the filter and out of the update: it is immutable, and
+    // whether Mongoose strips it from a non-upsert $set is not worth relying on.
+    const { _id, ...updatable } = CartEntityToPersistenceMapper.toPersistence(entity);
+    const doc = await CartModel.findOneAndUpdate(
+      { _id, version: entity.version },
+      { $set: { ...updatable, version: entity.version + 1 } },
+      { new: true }
     ).lean();
+
+    if (!doc) throw new CartVersionConflictError(entity.id);
+
     return CartPersistenceToEntity.fromPersistenceToEntity(doc as any);
   }
 

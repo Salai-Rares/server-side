@@ -9,6 +9,7 @@ export class CartEntity {
   private readonly _guestId?: string;
   private readonly _createdAt?: Date;
   private readonly _updatedAt?: Date;
+  private readonly _version: number;
   private _items: CartItemProps[];
 
   constructor(props: CartProps) {
@@ -16,6 +17,7 @@ export class CartEntity {
     this._userId = props.userId;
     this._guestId = props.guestId;
     this._items = props.items;
+    this._version = props.version;
     this._createdAt = props.createdAt;
     this._updatedAt = props.updatedAt;
     this.validate();
@@ -44,6 +46,7 @@ export class CartEntity {
   public get guestId() { return this._guestId; }
   public get createdAt() { return this._createdAt; }
   public get updatedAt() { return this._updatedAt; }
+  public get version() { return this._version; }
   public get items(): CartItemProps[] { return [...this._items]; }
   public get itemCount() { return this._items.length; }
   public get totalQuantity() { return this._items.reduce((s, i) => s + i.quantity, 0); }

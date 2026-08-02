@@ -3,7 +3,13 @@ import { ICart } from "../../types/cart.types";
 import { CartEntity } from "../cart.entity";
 
 export class CartEntityToPersistenceMapper {
-  static toPersistence(entity: CartEntity): Omit<ICart, "createdAt" | "updatedAt"> {
+  /**
+   * version is deliberately absent: it is an optimistic-locking token owned by
+   * the repository's save(), not a field the entity maps onto storage.
+   */
+  static toPersistence(
+    entity: CartEntity
+  ): Omit<ICart, "createdAt" | "updatedAt" | "version"> {
     return {
       _id: toObjectId(entity.id),
       userId: entity.userId ? toObjectId(entity.userId) : undefined,

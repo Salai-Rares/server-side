@@ -13,6 +13,7 @@ export class CartPersistenceToEntity {
         quantity: item.quantity,
         addedAt: item.addedAt,
       })),
+      version: model.version,
       createdAt: (model as any).createdAt,
       updatedAt: (model as any).updatedAt,
     });
