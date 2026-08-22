@@ -7,8 +7,10 @@ import { DiscountEntity } from "../domain/discount.entity";
 import { IDiscountReadRepository } from "../repositories/types/discount-read.repository.types";
 import { ICouponReadRepository } from "../../coupon/repositories/types/coupon-read.repository.types";
 import { DiscountConditionFactory } from "../domain/values/conditions/discount-condition.factory";
+import { AggregateConditionVO } from "../domain/values/conditions/aggregate-condition.vo";
 import { ConditionEvaluator } from "./condition-evaluator";
 import { DiscountCalculator } from "./discount-calculator";
+import { computeAggregates } from "./cart-aggregates";
 import {
   CartContext,
   CartItemContext,
@@ -47,9 +49,14 @@ export class DiscountEngine implements IDiscountEngine {
     const matchingFreeShipping: Matched[] = [];
 
     for (const discount of candidates) {
-      const eligibleCart = discount.excludeOnSale
-        ? { ...cart, items: cart.items.filter((i) => i.effectivePrice === i.originalPrice) }
-        : cart;
+      // Aggregates must be resummed over the filtered items, or a subtotal or
+      // quantity condition would still be gated on the sale items this discount
+      // is meant to ignore.
+      let eligibleCart = cart;
+      if (discount.excludeOnSale) {
+        const items = cart.items.filter((i) => i.effectivePrice === i.originalPrice);
+        eligibleCart = { ...cart, items, ...computeAggregates(items) };
+      }
       const { matches, matchedItems } = ConditionEvaluator.evaluate(discount, eligibleCart);
       if (!matches) continue;
       if (discount.type === "free_shipping") {
@@ -235,10 +242,13 @@ export class DiscountEngine implements IDiscountEngine {
       stackable: entity.stackable,
       excludeOnSale: entity.excludeOnSale,
       priority: entity.priority,
+      // scope must survive the round-trip — without it a cached discount would
+      // silently fall back to cart scope and over-grant
       conditions: entity.conditions.map((c) => ({
         type: c.type,
         operator: c.operator,
         value: c.value,
+        ...(c instanceof AggregateConditionVO ? { scope: c.scope } : {}),
       })),
       createdBy: entity.createdBy,
       createdAt: entity.createdAt?.toISOString(),

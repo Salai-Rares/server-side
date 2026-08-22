@@ -207,7 +207,7 @@ describe("DiscountCalculator", () => {
     it("sets shippingFree with no item changes", () => {
       const discount = buildDiscount({
         type: "free_shipping",
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const cart = buildCart([buildCartItem()]);
 

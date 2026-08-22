@@ -13,7 +13,7 @@ const ConditionSchema = new Schema<DiscountConditionType>(
         "variant",
         "category",
         "tag",
-        "cart_total",
+        "subtotal",
         "quantity",
         "user_segment",
       ],
@@ -22,8 +22,15 @@ const ConditionSchema = new Schema<DiscountConditionType>(
     value: { type: Schema.Types.Mixed, required: true },
     operator: {
       type: String,
-      enum: ["equals", "greater_than", "less_than"],
+      enum: ["equals", "at_least", "at_most", "greater_than", "less_than"],
       required: true,
+    },
+    // Only aggregate conditions (subtotal, quantity) carry a scope; absent
+    // means "cart", which the VO applies as its default.
+    scope: {
+      type: String,
+      enum: ["cart", "matched_items"],
+      required: false,
     },
   },
   { _id: false }

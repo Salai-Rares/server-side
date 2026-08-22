@@ -13,7 +13,7 @@ export interface CartItemContext {
 
 export interface CartContext {
   items: CartItemContext[];
-  cartTotal: number;      // sum of effectivePrice * quantity — used for cart_total conditions
+  subtotal: number;       // sum of effectivePrice * quantity — used for subtotal conditions
   totalQuantity: number;  // total units across all items — used for quantity conditions
   userId: string;
   userSegment?: string;

@@ -1,38 +1,20 @@
 import { DiscountEntity } from "../domain/discount.entity";
+import { DiscountConditionVO } from "../domain/values/conditions/discount-condition.vo";
+import { AggregateConditionVO } from "../domain/values/conditions/aggregate-condition.vo";
+import { ITEM_CONDITION_TYPES } from "../constants/discount-conditions";
+import { CartAggregates, computeAggregates } from "./cart-aggregates";
 import { CartContext, CartItemContext, ConditionEvaluationResult } from "./types/engine.types";
 
 export class ConditionEvaluator {
-  private static readonly ITEM_CONDITION_TYPES = new Set([
-    "product", "variant", "category", "tag",
-  ]);
-
   static evaluate(discount: DiscountEntity, cart: CartContext): ConditionEvaluationResult {
     const conditions = discount.conditions;
 
-    const itemConditions = conditions.filter((c) =>
-      ConditionEvaluator.ITEM_CONDITION_TYPES.has(c.type)
-    );
-    const cartConditions = conditions.filter((c) =>
-      !ConditionEvaluator.ITEM_CONDITION_TYPES.has(c.type)
-    );
+    const itemConditions = conditions.filter((c) => ITEM_CONDITION_TYPES.has(c.type));
+    const cartConditions = conditions.filter((c) => !ITEM_CONDITION_TYPES.has(c.type));
 
-    // All cart-level conditions must pass (AND logic)
-    for (const condition of cartConditions) {
-      const passes = ConditionEvaluator.evaluateCartCondition(
-        condition.type,
-        condition.operator,
-        condition.value as number | string,
-        cart
-      );
-      if (!passes) return { matches: false, matchedItems: [] };
-    }
-
-    // No item conditions → discount applies to the whole cart
-    if (itemConditions.length === 0) {
-      return { matches: true, matchedItems: [] };
-    }
-
-    // Each item condition narrows the matched set (AND logic)
+    // Item filtering runs before the aggregate checks so a condition scoped to
+    // matched_items has a subset to sum over. Each item condition narrows the
+    // matched set (AND logic).
     let matchedItems: CartItemContext[] = cart.items;
     for (const condition of itemConditions) {
       matchedItems = matchedItems.filter((item) =>
@@ -40,34 +22,68 @@ export class ConditionEvaluator {
       );
     }
 
-    if (matchedItems.length === 0) {
+    if (itemConditions.length > 0 && matchedItems.length === 0) {
       return { matches: false, matchedItems: [] };
+    }
+
+    // Summed on first demand — most discounts carry no scoped condition
+    let scopedAggregates: CartAggregates | null = null;
+
+    // All cart-level conditions must pass (AND logic)
+    for (const condition of cartConditions) {
+      let aggregates: CartAggregates = cart;
+      if (condition instanceof AggregateConditionVO && condition.scope === "matched_items") {
+        scopedAggregates ??= computeAggregates(matchedItems);
+        aggregates = scopedAggregates;
+      }
+
+      if (!ConditionEvaluator.evaluateCartCondition(condition, aggregates, cart)) {
+        return { matches: false, matchedItems: [] };
+      }
+    }
+
+    // No item conditions → discount applies to the whole cart
+    if (itemConditions.length === 0) {
+      return { matches: true, matchedItems: [] };
     }
 
     return { matches: true, matchedItems };
   }
 
   private static evaluateCartCondition(
-    type: string,
-    operator: string,
-    value: number | string,
+    condition: DiscountConditionVO,
+    aggregates: CartAggregates,
     cart: CartContext
   ): boolean {
-    if (type === "cart_total") {
-      const total = cart.cartTotal;
-      if (operator === "greater_than") return total > (value as number);
-      if (operator === "less_than") return total < (value as number);
+    if (condition.type === "subtotal") {
+      return ConditionEvaluator.compare(
+        aggregates.subtotal,
+        condition.operator,
+        condition.value as number
+      );
     }
-    if (type === "quantity") {
-      const qty = cart.totalQuantity;
-      if (operator === "equals") return qty === (value as number);
-      if (operator === "greater_than") return qty > (value as number);
-      if (operator === "less_than") return qty < (value as number);
+    if (condition.type === "quantity") {
+      return ConditionEvaluator.compare(
+        aggregates.totalQuantity,
+        condition.operator,
+        condition.value as number
+      );
     }
-    if (type === "user_segment") {
-      return cart.userSegment === (value as string);
+    if (condition.type === "user_segment") {
+      return cart.userSegment === (condition.value as string);
     }
     return false;
+  }
+
+  private static compare(actual: number, operator: string, expected: number): boolean {
+    switch (operator) {
+      case "equals":       return actual === expected;
+      case "at_least":     return actual >= expected;
+      case "at_most":      return actual <= expected;
+      case "greater_than": return actual > expected;
+      case "less_than":    return actual < expected;
+      default:             return false;
+    }
   }
 
   private static evaluateItemCondition(

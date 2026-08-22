@@ -1,6 +1,6 @@
 import { DiscountConditionType } from "@/modules/discount/types/discount.types";
 import { ValidationError } from "@/shared/errors/ValidationError";
-import { CartTotalConditionVO } from "./cart-total-condition.vo";
+import { SubtotalConditionVO } from "./subtotal-condition.vo";
 import { CategoryConditionVO } from "./category-condition.vo";
 import { DiscountConditionVO } from "./discount-condition.vo";
 import { ProductConditionVO } from "./product-condition.vo";
@@ -18,10 +18,10 @@ export class DiscountConditionFactory {
         return new CategoryConditionVO(raw.operator, raw.value);
       case "tag":
         return new TagConditionVO(raw.operator, raw.value);
-      case "cart_total":
-        return new CartTotalConditionVO(raw.operator, raw.value);
+      case "subtotal":
+        return new SubtotalConditionVO(raw.operator, raw.value, raw.scope);
       case "quantity":
-        return new QuantityConditionVO(raw.operator, raw.value);
+        return new QuantityConditionVO(raw.operator, raw.value, raw.scope);
       case "user_segment":
         return new UserSegmentConditionVO(raw.operator, raw.value);
       case "variant":

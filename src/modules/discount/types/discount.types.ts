@@ -1,16 +1,19 @@
 import { LeanDocument, Types } from "mongoose";
 import { BuyXGetYValue } from "../domain/discount-domain.types";
+import { ConditionScope } from "../constants/discount-conditions";
+import { QuantityOperator } from "../domain/values/conditions/quantity-conditition.vo";
+import { SubtotalOperator } from "../domain/values/conditions/subtotal-condition.vo";
 
 export type { BuyXGetYValue };
 
 export type DiscountConditionType =
-  | { type: "product";      operator: "equals";                                value: string }
-  | { type: "variant";      operator: "equals";                                value: string }
-  | { type: "category";     operator: "equals";                                value: string }
-  | { type: "tag";          operator: "equals";                                value: string }
-  | { type: "cart_total";   operator: "greater_than" | "less_than";            value: number }
-  | { type: "quantity";     operator: "equals" | "greater_than" | "less_than"; value: number }
-  | { type: "user_segment"; operator: "equals";                                value: string };
+  | { type: "product";      operator: "equals"; value: string }
+  | { type: "variant";      operator: "equals"; value: string }
+  | { type: "category";     operator: "equals"; value: string }
+  | { type: "tag";          operator: "equals"; value: string }
+  | { type: "subtotal";     operator: SubtotalOperator; value: number; scope?: ConditionScope }
+  | { type: "quantity";     operator: QuantityOperator; value: number; scope?: ConditionScope }
+  | { type: "user_segment"; operator: "equals"; value: string };
 
 export interface IDiscountBase {
   name: string;

@@ -25,7 +25,7 @@ describe("DiscountEngine", () => {
       const discount = buildDiscount({
         type: "percentage",
         value: 10,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 50 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 50 }],
       });
       // Simulate cache returning serialized discount
       cache.get.mockResolvedValue([
@@ -43,7 +43,7 @@ describe("DiscountEngine", () => {
           excludeOnSale: discount.excludeOnSale,
           priority: discount.priority,
           createdBy: discount.createdBy,
-          conditions: [{ type: "cart_total", operator: "greater_than", value: 50 }],
+          conditions: [{ type: "subtotal", operator: "greater_than", value: 50 }],
         },
       ]);
       const cart = buildCart([buildCartItem({ effectivePrice: 100 })]);
@@ -53,6 +53,37 @@ describe("DiscountEngine", () => {
       expect(cache.get).toHaveBeenCalledWith(DISCOUNT_CACHE_KEYS.ACTIVE_AUTOMATIC);
       expect(discountRepo.findAllActiveAutomatic).not.toHaveBeenCalled();
       expect(result.items[0].finalPrice).toBe(90);
+    });
+
+    // Without scope on the serialized shape a cached discount silently reverts
+    // to cart scope, which is exactly the over-grant scope exists to prevent.
+    it("round-trips condition scope through the cache", async () => {
+      const discount = buildDiscount({
+        type: "percentage",
+        value: 10,
+        conditions: [
+          { type: "product", operator: "equals", value: "X" },
+          { type: "quantity", operator: "at_least", value: 3, scope: "matched_items" },
+        ],
+      });
+      cache.get.mockResolvedValue(null);
+      discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
+      const cart = buildCart([
+        buildCartItem({ productId: "X", quantity: 1, originalPrice: 100, effectivePrice: 100 }),
+        buildCartItem({ productId: "Y", quantity: 5, originalPrice: 100, effectivePrice: 100 }),
+      ]);
+
+      await engine.evaluate(cart);
+      const [, serialized] = cache.set.mock.calls[0];
+      expect((serialized as any[])[0].conditions).toContainEqual(
+        expect.objectContaining({ type: "quantity", scope: "matched_items" })
+      );
+
+      // replay the cached payload — must still refuse to fire
+      cache.get.mockResolvedValue(serialized as unknown[]);
+      const result = await engine.evaluate(cart);
+
+      expect(result.appliedDiscounts).toHaveLength(0);
     });
 
     it("fetches from DB and caches on cache miss", async () => {
@@ -90,7 +121,7 @@ describe("DiscountEngine", () => {
 
     it("returns original prices when conditions fail", async () => {
       const discount = buildDiscount({
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 500 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 500 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
@@ -108,7 +139,7 @@ describe("DiscountEngine", () => {
       const discount = buildDiscount({
         type: "percentage",
         value: 20,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 10 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 10 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
@@ -129,7 +160,7 @@ describe("DiscountEngine", () => {
       const freeShipping = buildDiscount({
         id: "fs-1",
         type: "free_shipping",
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 10 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 10 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([freeShipping]);
@@ -150,7 +181,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 10,
         stackable: true,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 10 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 10 }],
       });
       const couponDiscount = buildDiscount({
         id: "coupon-disc-1",
@@ -158,7 +189,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 20,
         applicationMode: "code_required",
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 10 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 10 }],
       });
       const coupon = buildCoupon({ discountId: "coupon-disc-1" });
 
@@ -234,7 +265,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 10,
         stackable: true,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const disc2 = buildDiscount({
         id: "s2",
@@ -242,7 +273,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 20,
         stackable: true,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([disc1, disc2]);
@@ -265,7 +296,7 @@ describe("DiscountEngine", () => {
         value: 30,
         stackable: false,
         priority: 1,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const nonStack2 = buildDiscount({
         id: "ns2",
@@ -274,7 +305,7 @@ describe("DiscountEngine", () => {
         value: 15,
         stackable: false,
         priority: 3,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const stackable = buildDiscount({
         id: "s1",
@@ -282,7 +313,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 5,
         stackable: true,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([nonStack1, nonStack2, stackable]);
@@ -310,7 +341,7 @@ describe("DiscountEngine", () => {
         value: 10,
         stackable: false,
         priority: 2,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const tie2 = buildDiscount({
         id: "t2",
@@ -319,7 +350,7 @@ describe("DiscountEngine", () => {
         value: 40,
         stackable: false,
         priority: 2,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([tie1, tie2]);
@@ -341,7 +372,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 10,
         excludeOnSale: true,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
@@ -363,7 +394,7 @@ describe("DiscountEngine", () => {
         type: "percentage",
         value: 50,
         excludeOnSale: false,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
@@ -376,6 +407,29 @@ describe("DiscountEngine", () => {
       // promotion: 100 * 0.5 = 50, effectivePrice = 70 → min = 50
       expect(result.items[0].finalPrice).toBe(50);
     });
+
+    it("resums aggregates over the eligible items", async () => {
+      const discount = buildDiscount({
+        type: "percentage",
+        value: 10,
+        excludeOnSale: true,
+        conditions: [{ type: "subtotal", operator: "at_least", value: 100 }],
+      });
+      cache.get.mockResolvedValue(null);
+      discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);
+      // 30 + 200 = 230 across the cart, but only the 30 item is eligible
+      const cart = buildCart([
+        buildCartItem({ productId: "full-price", originalPrice: 30, effectivePrice: 30 }),
+        buildCartItem({ productId: "on-sale", originalPrice: 400, effectivePrice: 200 }),
+      ]);
+
+      const result = await engine.evaluate(cart);
+
+      expect(result.appliedDiscounts).toHaveLength(0);
+      // prices untouched — the markdown on the on-sale item is not the discount
+      expect(result.items.find((i) => i.productId === "full-price")!.finalPrice).toBe(30);
+      expect(result.items.find((i) => i.productId === "on-sale")!.finalPrice).toBe(200);
+    });
   });
 
   describe("rounding", () => {
@@ -383,7 +437,7 @@ describe("DiscountEngine", () => {
       const discount = buildDiscount({
         type: "percentage",
         value: 33,
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       cache.get.mockResolvedValue(null);
       discountRepo.findAllActiveAutomatic.mockResolvedValue([discount]);

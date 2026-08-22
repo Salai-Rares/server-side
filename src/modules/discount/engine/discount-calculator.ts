@@ -67,7 +67,7 @@ export class DiscountCalculator {
     if (matchedItems.length === 0) {
       return {
         itemResults: [],
-        cartDiscountAmount: Math.min(amount, cart.cartTotal),
+        cartDiscountAmount: Math.min(amount, cart.subtotal),
         shippingFree: false,
       };
     }

@@ -1,10 +1,22 @@
+export type ConditionScope = "cart" | "matched_items";
+
+export const CONDITION_SCOPES = ["cart", "matched_items"] as const;
+
+export const DEFAULT_CONDITION_SCOPE: ConditionScope = "cart";
+
+// Conditions that select individual cart items. They narrow the matched set
+// rather than being evaluated against an aggregate.
+export const ITEM_CONDITION_TYPES = new Set([
+  "product", "variant", "category", "tag",
+]);
+
 export const CONDITION_TYPE_OPERATORS = {
   product:      ["equals"] as const,
   variant:      ["equals"] as const,
   category:     ["equals"] as const,
   tag:          ["equals"] as const,
-  cart_total:   ["greater_than", "less_than"] as const,
-  quantity:     ["equals", "greater_than", "less_than"] as const,
+  subtotal:     ["at_least", "at_most", "greater_than", "less_than"] as const,
+  quantity:     ["equals", "at_least", "at_most", "greater_than", "less_than"] as const,
   user_segment: ["equals"] as const,
 } as const;
 
@@ -13,7 +25,7 @@ export const CONDITION_VALUE_TYPES = {
   variant:      "string",
   category:     "string",
   tag:          "string",
-  cart_total:   "number",
+  subtotal:     "number",
   quantity:     "number",
   user_segment: "string",
 } as const;

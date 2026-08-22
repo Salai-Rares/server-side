@@ -24,16 +24,20 @@ const TagConditionSchema = z.object({
   value: z.string(),
 });
 
-const CartTotalConditionSchema = z.object({
-  type: z.literal("cart_total"),
-  operator: z.enum(["greater_than", "less_than"]),
+const ConditionScopeSchema = z.enum(["cart", "matched_items"]).default("cart");
+
+const SubtotalConditionSchema = z.object({
+  type: z.literal("subtotal"),
+  operator: z.enum(["at_least", "at_most", "greater_than", "less_than"]),
   value: z.number(),
+  scope: ConditionScopeSchema,
 });
 
 const QuantityConditionSchema = z.object({
   type: z.literal("quantity"),
-  operator: z.enum(["equals", "greater_than", "less_than"]),
+  operator: z.enum(["equals", "at_least", "at_most", "greater_than", "less_than"]),
   value: z.number(),
+  scope: ConditionScopeSchema,
 });
 
 const UserSegmentConditionSchema = z.object({
@@ -47,7 +51,7 @@ export const ConditionZodSchema = z.union([
   VariantConditionSchema,
   CategoryConditionSchema,
   TagConditionSchema,
-  CartTotalConditionSchema,
+  SubtotalConditionSchema,
   QuantityConditionSchema,
   UserSegmentConditionSchema,
 ]);

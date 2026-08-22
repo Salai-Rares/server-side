@@ -3,9 +3,9 @@ import { buildDiscount, buildCartItem, buildCart } from "../../factories/discoun
 
 describe("ConditionEvaluator", () => {
   describe("cart conditions", () => {
-    it("passes when cart_total greater_than threshold", () => {
+    it("passes when subtotal greater_than threshold", () => {
       const discount = buildDiscount({
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 100 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 100 }],
       });
       const cart = buildCart([buildCartItem({ effectivePrice: 200 })]);
 
@@ -15,9 +15,9 @@ describe("ConditionEvaluator", () => {
       expect(result.matchedItems).toHaveLength(0);
     });
 
-    it("fails when cart_total below threshold", () => {
+    it("fails when subtotal below threshold", () => {
       const discount = buildDiscount({
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 100 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 100 }],
       });
       const cart = buildCart([buildCartItem({ effectivePrice: 50 })]);
 
@@ -26,9 +26,9 @@ describe("ConditionEvaluator", () => {
       expect(result.matches).toBe(false);
     });
 
-    it("passes when cart_total less_than threshold", () => {
+    it("passes when subtotal less_than threshold", () => {
       const discount = buildDiscount({
-        conditions: [{ type: "cart_total", operator: "less_than", value: 200 }],
+        conditions: [{ type: "subtotal", operator: "less_than", value: 200 }],
       });
       const cart = buildCart([buildCartItem({ effectivePrice: 100 })]);
 
@@ -158,7 +158,7 @@ describe("ConditionEvaluator", () => {
       const discount = buildDiscount({
         type: "buy_x_get_y",
         conditions: [
-          { type: "cart_total", operator: "greater_than", value: 50 },
+          { type: "subtotal", operator: "greater_than", value: 50 },
           { type: "category", operator: "equals", value: "shoes" },
         ],
       });
@@ -178,7 +178,7 @@ describe("ConditionEvaluator", () => {
       const discount = buildDiscount({
         type: "buy_x_get_y",
         conditions: [
-          { type: "cart_total", operator: "greater_than", value: 500 },
+          { type: "subtotal", operator: "greater_than", value: 500 },
           { type: "category", operator: "equals", value: "shoes" },
         ],
       });
@@ -215,10 +215,110 @@ describe("ConditionEvaluator", () => {
     });
   });
 
+  describe("aggregate scope", () => {
+    const scopedToProduct = (scope?: "cart" | "matched_items") =>
+      buildDiscount({
+        conditions: [
+          { type: "product", operator: "equals", value: "X" },
+          { type: "quantity", operator: "at_least", value: 3, scope },
+        ],
+      });
+
+    it("matched_items sums only the items the item conditions selected", () => {
+      const discount = scopedToProduct("matched_items");
+      const cart = buildCart([buildCartItem({ productId: "X", quantity: 3 })]);
+
+      const result = ConditionEvaluator.evaluate(discount, cart);
+
+      expect(result.matches).toBe(true);
+      expect(result.matchedItems).toHaveLength(1);
+    });
+
+    // The over-grant this scope exists to prevent: 6 units in the cart but only
+    // 1 of the product the discount targets.
+    it("matched_items ignores units of other products", () => {
+      const discount = scopedToProduct("matched_items");
+      const cart = buildCart([
+        buildCartItem({ productId: "X", quantity: 1 }),
+        buildCartItem({ productId: "Y", quantity: 5 }),
+      ]);
+
+      const result = ConditionEvaluator.evaluate(discount, cart);
+
+      expect(result.matches).toBe(false);
+    });
+
+    it("cart scope counts the same cart as a match", () => {
+      const discount = scopedToProduct("cart");
+      const cart = buildCart([
+        buildCartItem({ productId: "X", quantity: 1 }),
+        buildCartItem({ productId: "Y", quantity: 5 }),
+      ]);
+
+      const result = ConditionEvaluator.evaluate(discount, cart);
+
+      expect(result.matches).toBe(true);
+      // gate widens, target does not — only X is discounted
+      expect(result.matchedItems).toHaveLength(1);
+      expect(result.matchedItems[0].productId).toBe("X");
+    });
+
+    it("defaults to cart scope when the condition omits it", () => {
+      const discount = scopedToProduct(undefined);
+      const cart = buildCart([
+        buildCartItem({ productId: "X", quantity: 1 }),
+        buildCartItem({ productId: "Y", quantity: 5 }),
+      ]);
+
+      expect(ConditionEvaluator.evaluate(discount, cart).matches).toBe(true);
+    });
+
+    it("scopes subtotal to the matched items too", () => {
+      const discount = buildDiscount({
+        conditions: [
+          { type: "category", operator: "equals", value: "shoes" },
+          { type: "subtotal", operator: "at_least", value: 100, scope: "matched_items" },
+        ],
+      });
+      const cart = buildCart([
+        buildCartItem({ productId: "p1", categoryIds: ["shoes"], effectivePrice: 60, quantity: 1 }),
+        buildCartItem({ productId: "p2", categoryIds: ["hats"], effectivePrice: 900, quantity: 1 }),
+      ]);
+
+      // 60 from shoes alone is under 100, despite a 960 cart
+      expect(ConditionEvaluator.evaluate(discount, cart).matches).toBe(false);
+    });
+  });
+
+  describe("at_least / at_most operators", () => {
+    const atLeast3 = () =>
+      buildDiscount({
+        conditions: [{ type: "quantity", operator: "at_least", value: 3 }],
+      });
+
+    it("at_least matches the threshold exactly", () => {
+      const cart = buildCart([buildCartItem({ quantity: 3 })]);
+      expect(ConditionEvaluator.evaluate(atLeast3(), cart).matches).toBe(true);
+    });
+
+    it("at_least rejects one below the threshold", () => {
+      const cart = buildCart([buildCartItem({ quantity: 2 })]);
+      expect(ConditionEvaluator.evaluate(atLeast3(), cart).matches).toBe(false);
+    });
+
+    it("at_most matches the threshold exactly", () => {
+      const discount = buildDiscount({
+        conditions: [{ type: "quantity", operator: "at_most", value: 3 }],
+      });
+      const cart = buildCart([buildCartItem({ quantity: 3 })]);
+      expect(ConditionEvaluator.evaluate(discount, cart).matches).toBe(true);
+    });
+  });
+
   describe("no item conditions → cart-level discount", () => {
     it("returns matches true with empty matchedItems", () => {
       const discount = buildDiscount({
-        conditions: [{ type: "cart_total", operator: "greater_than", value: 1 }],
+        conditions: [{ type: "subtotal", operator: "greater_than", value: 1 }],
       });
       const cart = buildCart([buildCartItem(), buildCartItem({ productId: "p2" })]);
 

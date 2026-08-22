@@ -3,6 +3,7 @@ import { DiscountConditionType, IDiscount } from "../../types/discount.types";
 import { DiscountEntity } from "../discount.entity";
 
 import { DiscountConditionVO } from "../values/conditions/discount-condition.vo";
+import { AggregateConditionVO } from "../values/conditions/aggregate-condition.vo";
 
 export class DiscountEntityToPersistenceMapper {
   public static toPersistance(
@@ -33,6 +34,8 @@ export class DiscountEntityToPersistenceMapper {
     type: condition.type as DiscountConditionType["type"],
     operator: condition.operator as any, // narrowed at VO level
     value: condition.value as any,
+    // Aggregate conditions only — the mongoose schema leaves it unset otherwise
+    ...(condition instanceof AggregateConditionVO ? { scope: condition.scope } : {}),
   };
 }
 }

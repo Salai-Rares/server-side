@@ -4,6 +4,8 @@ import { ChangeTracker } from "@/shared/services/change-tracker";
 import { ApiError } from "@/shared/errors/api-error/ApiError";
 import { DataKeys } from "@/shared/types/data-keys-entities.types";
 import { DiscountConditionVO } from "./values/conditions/discount-condition.vo";
+import { AggregateConditionVO } from "./values/conditions/aggregate-condition.vo";
+import { ITEM_CONDITION_TYPES } from "../constants/discount-conditions";
 
 type ReadonlyFields = "id" | "createdAt" | "updatedAt";
 
@@ -38,10 +40,6 @@ export class DiscountEntity implements DiscountProps {
   private _priority: number;
   private readonly _applicationMode: "automatic" | "code_required";
 
-  private static readonly ITEM_CONDITION_TYPES = new Set([
-    "product", "variant", "category", "tag",
-  ]);
-
   constructor(props: DiscountProps) {
     this._id = props.id;
     this._createdBy = props.createdBy;
@@ -62,6 +60,10 @@ export class DiscountEntity implements DiscountProps {
     this._priority = props.priority;
     this._applicationMode = props.applicationMode;
     this.validate();
+  }
+
+  private hasItemCondition(): boolean {
+    return this._conditions.some((c) => ITEM_CONDITION_TYPES.has(c.type));
   }
 
   private validate() {
@@ -91,14 +93,11 @@ export class DiscountEntity implements DiscountProps {
       if (this._value !== 0) {
         throw ValidationError.domainRule("value", "free_shipping_value", "free_shipping discount must have value 0", this._id);
       }
-      const hasItemCondition = this._conditions.some((c) =>
-        DiscountEntity.ITEM_CONDITION_TYPES.has(c.type)
-      );
-      if (hasItemCondition) {
+      if (this.hasItemCondition()) {
         throw ValidationError.domainRule(
           "conditions",
           "free_shipping_item_condition",
-          "free_shipping applies to the whole order — use only cart_total or user_segment conditions",
+          "free_shipping applies to the whole order — use only subtotal or user_segment conditions",
           this._id
         );
       }
@@ -132,18 +131,27 @@ export class DiscountEntity implements DiscountProps {
       }
     }
 
-    if (this._type === "buy_x_get_y") {
-      const hasItemCondition = this._conditions.some((c) =>
-        DiscountEntity.ITEM_CONDITION_TYPES.has(c.type)
+    if (this._type === "buy_x_get_y" && !this.hasItemCondition()) {
+      throw ValidationError.domainRule(
+        "conditions",
+        "buy_x_get_y_requires_item_condition",
+        "buy_x_get_y discounts must target specific items — add at least one product, variant, or category condition",
+        this._id
       );
-      if (!hasItemCondition) {
-        throw ValidationError.domainRule(
-          "conditions",
-          "buy_x_get_y_requires_item_condition",
-          "buy_x_get_y discounts must target specific items — add at least one product, variant, or category condition",
-          this._id
-        );
-      }
+    }
+
+    // A `matched_items` aggregate sums over the items picked out by the item
+    // conditions. With no item condition there is no subset to sum over.
+    const hasScopedCondition = this._conditions.some(
+      (c) => c instanceof AggregateConditionVO && c.scope === "matched_items"
+    );
+    if (hasScopedCondition && !this.hasItemCondition()) {
+      throw ValidationError.domainRule(
+        "conditions",
+        "scoped_condition_requires_item_condition",
+        "A condition scoped to matched_items needs at least one product, variant, category, or tag condition to define the matched set",
+        this._id
+      );
     }
 
     if (this._endDate <= this._startDate) {
@@ -178,13 +186,6 @@ export class DiscountEntity implements DiscountProps {
   public get conditions(): DiscountConditionVO[] { return [...this._conditions]; }
   public get priority() { return this._priority; }
   public get applicationMode() { return this._applicationMode; }
-
-  public effectiveScope(): "cart" | "matched_items" {
-    const hasItemCondition = this._conditions.some((c) =>
-      DiscountEntity.ITEM_CONDITION_TYPES.has(c.type)
-    );
-    return hasItemCondition ? "matched_items" : "cart";
-  }
 
   // Mutators
   public updateName(name: string) {
@@ -234,7 +235,14 @@ export class DiscountEntity implements DiscountProps {
     if (!conditions || conditions.length === 0) {
       throw ValidationError.domainRule("conditions", "conditions_required", "Discount must have at least one condition", this._id);
     }
+    const prev = this._conditions;
     this._conditions = conditions;
+    try {
+      this.validate();
+    } catch (e) {
+      this._conditions = prev;
+      throw e;
+    }
     this.changeTracker.mark("conditions");
   }
 

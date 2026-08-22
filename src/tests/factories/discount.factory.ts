@@ -3,11 +3,13 @@ import { BuyXGetYValue } from "@/modules/discount/domain/discount-domain.types";
 import { DiscountConditionFactory } from "@/modules/discount/domain/values/conditions/discount-condition.factory";
 import { CouponEntity } from "@/modules/coupon/domain/coupon.entity";
 import { CartContext, CartItemContext } from "@/modules/discount/engine/types/engine.types";
+import { computeAggregates } from "@/modules/discount/engine/cart-aggregates";
 
 interface RawCondition {
   type: string;
   operator: string;
   value: unknown;
+  scope?: "cart" | "matched_items";
 }
 
 interface BuildDiscountInput {
@@ -34,7 +36,7 @@ export function buildDiscount(input: BuildDiscountInput = {}): DiscountEntity {
   const defaultConditions: RawCondition[] =
     type === "buy_x_get_y"
       ? [{ type: "category", operator: "equals", value: "cat-1" }]
-      : [{ type: "cart_total", operator: "greater_than", value: 1 }];
+      : [{ type: "subtotal", operator: "greater_than", value: 1 }];
 
   const defaultValue =
     type === "buy_x_get_y"
@@ -88,8 +90,7 @@ export function buildCart(
 ): CartContext {
   return {
     items,
-    cartTotal: items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0),
-    totalQuantity: items.reduce((s, i) => s + i.quantity, 0),
+    ...computeAggregates(items),
     userId: "user-1",
     ...overrides,
   };
